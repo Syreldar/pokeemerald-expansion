@@ -948,6 +948,8 @@ bool32 ShouldSwitch(u32 battler, bool32 emitResult)
     s32 availableToSwitch;
     bool32 hasAceMon = FALSE;
 
+    if (AI_THINKING_STRUCT->aiFlags[battler] & AI_FLAG_DO_NOT_SWITCH)
+        return FALSE;
     if (gBattleMons[battler].status2 & (STATUS2_WRAPPED | STATUS2_ESCAPE_PREVENTION))
         return FALSE;
     if (gStatuses3[battler] & STATUS3_ROOTED)
@@ -1909,10 +1911,11 @@ u8 GetMostSuitableMonToSwitchInto(u32 battler, bool32 switchAfterMonKOd)
     s32 firstId = 0;
     s32 lastId = 0; // + 1
     struct Pokemon *party;
+    u32 flags = AI_THINKING_STRUCT->aiFlags[battler];
 
     if (*(gBattleStruct->monToSwitchIntoId + battler) != PARTY_SIZE)
         return *(gBattleStruct->monToSwitchIntoId + battler);
-    if (gBattleTypeFlags & BATTLE_TYPE_ARENA)
+    if ((gBattleTypeFlags & BATTLE_TYPE_ARENA) || (flags & AI_FLAG_PRESERVE_ORDER))
         return gBattlerPartyIndexes[battler] + 1;
 
     if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
@@ -1943,7 +1946,7 @@ u8 GetMostSuitableMonToSwitchInto(u32 battler, bool32 switchAfterMonKOd)
 
     // Split ideal mon decision between after previous mon KO'd (prioritize offensive options) and after switching active mon out (prioritize defensive options), and expand the scope of both.
     // Only use better mon selection if AI_FLAG_SMART_MON_CHOICES is set for the trainer.
-    if (AI_THINKING_STRUCT->aiFlags[battler] & AI_FLAG_SMART_MON_CHOICES)
+    if (flags & AI_FLAG_SMART_MON_CHOICES)
     {
         bestMonId = GetBestMonIntegrated(party, firstId, lastId, battler, opposingBattler, battlerIn1, battlerIn2, switchAfterMonKOd);
         return bestMonId;

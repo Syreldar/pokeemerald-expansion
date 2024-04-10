@@ -580,7 +580,7 @@ static u32 ChooseMoveOrAction_Singles(u32 battlerAi)
         return AI_CHOICE_WATCH;
 
     // Switch mon if there are no good moves to use.
-    if (AI_ShouldSwitchIfBadMoves(battlerAi, FALSE))
+    if (!(flags & AI_FLAG_DO_NOT_SWITCH) && AI_ShouldSwitchIfBadMoves(battlerAi, FALSE))
         return AI_CHOICE_SWITCH;
 
     numOfBestMoves = 1;
