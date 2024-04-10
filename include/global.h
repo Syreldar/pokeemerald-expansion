@@ -167,8 +167,12 @@ struct UCoords32
     u32 y;
 };
 
+#include "constants/items.h"
+#define ITEM_FLAGS_COUNT ((ITEMS_COUNT / 8) + ((ITEMS_COUNT % 8) ? 1 : 0))
+
 struct SaveBlock3
 {
+    /*0xF2C*/ u8 itemFlags[ITEM_FLAGS_COUNT];
 };
 
 extern struct SaveBlock3 *gSaveBlock3Ptr;
