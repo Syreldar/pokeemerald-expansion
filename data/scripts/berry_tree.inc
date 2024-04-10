@@ -24,43 +24,19 @@ BerryTree_EventScript_CheckSoil::
 	lock
 	faceplayer
 	specialvar VAR_RESULT, PlayerHasBerries
-	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_WantToPlant
+	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_ChooseBerryToPlant
+.if OW_BERRY_MULCH_USAGE == TRUE
 	specialvar VAR_RESULT, PlayerHasMulch
-	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_WantToMulch
+	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_ChooseMulchToUse
+.endif
 	message BerryTree_Text_ItsSoftLoamySoil
 	waitmessage
 	waitbuttonpress
 	release
 	end
 
-BerryTree_EventScript_WantToPlant::
-	specialvar VAR_RESULT, PlayerHasMulch
-	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_WantToPlantMulch
-	msgbox BerryTree_Text_WantToPlant, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_ChooseBerryToPlant
-	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_CancelPlanting
-	end
-
-BerryTree_EventScript_WantToMulch::
-.if OW_BERRY_MULCH_USAGE == TRUE
-	msgbox BerryTree_Text_WantToMulch, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_ChooseMulchToUse
-	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_CancelPlanting
-.endif
-	end
-
-BerryTree_EventScript_WantToPlantMulch::
-.if OW_BERRY_MULCH_USAGE == TRUE
-	message BerryTree_Text_ItsSoftLoamySoil
-	waitmessage
-	multichoice 0, 0, MULTI_BERRY_PLOT, FALSE
-	switch VAR_RESULT
-	case 0, BerryTree_EventScript_ChooseMulchToUse
-	case 1, BerryTree_EventScript_ChooseBerryToPlant
-	case 2, BerryTree_EventScript_CancelPlanting
-	case MULTI_B_PRESSED, BerryTree_EventScript_CancelPlanting
-
 BerryTree_EventScript_ChooseMulchToUse::
+.if OW_BERRY_MULCH_USAGE == TRUE
 	fadescreen FADE_TO_BLACK
 	closemessage
 	special Bag_ChooseMulch
@@ -85,52 +61,46 @@ BerryTree_EventScript_CancelPlanting::
 
 BerryTree_EventScript_CheckBerryStage1::
 	lockall
-	special ObjectEventInteractionGetBerryCountString
+	call BerryTree_EventScript_WantToWater
+	special ObjectEventInteractionGetBerryName
 	message BerryTree_Text_BerryGrowthStage1
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_EndDialogue
 
 BerryTree_EventScript_CheckBerryStage2::
 	lockall
+	call BerryTree_EventScript_WantToWater
 	special ObjectEventInteractionGetBerryName
 	message BerryTree_Text_BerryGrowthStage2
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_EndDialogue
 
 BerryTree_EventScript_CheckBerryStage3::
 	lockall
+	call BerryTree_EventScript_WantToWater
 	special ObjectEventInteractionGetBerryName
 	message BerryTree_Text_BerryGrowthStage3
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_EndDialogue
 
 BerryTree_EventScript_CheckBerryStageTrunk::
 	lockall
+	call BerryTree_EventScript_WantToWater
 	special ObjectEventInteractionGetBerryName
 	message BerryTree_Text_BerryGrowthStageTrunk
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_EndDialogue
 
 BerryTree_EventScript_CheckBerryStageBudding::
 	lockall
+	call BerryTree_EventScript_WantToWater
 	special ObjectEventInteractionGetBerryName
 	message BerryTree_Text_BerryGrowthStageBudding
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_EndDialogue
 
 BerryTree_EventScript_CheckBerryStage4::
 	call BerryTree_EventScript_GetCareAdverb
 	lockall
+	call BerryTree_EventScript_WantToWater
 	special ObjectEventInteractionGetBerryName
 	message BerryTree_Text_BerryGrowthStage4
-	waitmessage
-	waitbuttonpress
-	goto BerryTree_EventScript_WantToWater
+	goto BerryTree_EventScript_EndDialogue
 
 @ VAR_0x8005 here is the number of times watered
 @ Buffered by ObjectEventInteractionGetBerryTreeData
@@ -154,12 +124,7 @@ BerryTree_EventScript_CheckBerryFullyGrown::
 	lock
 	faceplayer
 	special ObjectEventInteractionGetBerryCountString
-.if OW_BERRY_MUTATIONS == TRUE
-	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_CheckBerryFullyGrown_Mutation
-.endif
-	msgbox BerryTree_Text_WantToPick, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_PickBerry
-	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_CancelPickingBerry
+	goto BerryTree_EventScript_PickBerry
 
 .set BERRY_NORMAL_BAG_FULL, 0
 .set BERRY_NORMAL_SPACE_IN_BAG, 1
@@ -179,22 +144,11 @@ BerryTree_EventScript_PickBerry::
 	playfanfare MUS_OBTAIN_BERRY
 	waitmessage
 	waitfanfare
-	waitbuttonpress
-	message BerryTree_Text_PutAwayBerry
-	waitmessage
-	waitbuttonpress
 	release
 	end
 
 BerryTree_EventScript_BerryPocketFull::
 	message BerryTree_Text_BerryPocketFull
-	waitmessage
-	waitbuttonpress
-	release
-	end
-
-BerryTree_EventScript_CancelPickingBerry::
-	message BerryTree_Text_BerryLeftUnpicked
 	waitmessage
 	waitbuttonpress
 	release
@@ -215,31 +169,22 @@ BerryTree_EventScript_WantToWater::
 	call BerryTree_EventScript_CheckForWeed
 .endif
 	checkitem ITEM_WAILMER_PAIL
-	goto_if_eq VAR_RESULT, FALSE, BerryTree_EventScript_DontWater
-	specialvar VAR_RESULT, CanWaterBerryPlot
-	goto_if_eq VAR_RESULT, FALSE, BerryTree_EventScript_DontWater
-	special ObjectEventInteractionGetBerryName
-	msgbox BerryTree_Text_WantToWater, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_WaterBerry
-	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_DontWater
+	goto_if_eq VAR_RESULT, TRUE, BerryTree_EventScript_WaterBerry
+	return
 
-BerryTree_EventScript_DontWater::
+BerryTree_EventScript_EndDialogue::
+	waitmessage
+	waitbuttonpress
 	releaseall
 	end
 
 BerryTree_EventScript_ItemUseWailmerPail::
-	special ObjectEventInteractionGetBerryTreeData
 	lockall
+	special ObjectEventInteractionGetBerryTreeData
 BerryTree_EventScript_WaterBerry::
-	special ObjectEventInteractionGetBerryName
-	message BerryTree_Text_WateredTheBerry
-	waitmessage
 	special ObjectEventInteractionWaterBerryTree
 	special DoWateringBerryTreeAnim
 	waitstate
-	message BerryTree_Text_PlantIsDelighted
-	waitmessage
-	waitbuttonpress
 	releaseall
 	end
 
@@ -247,22 +192,10 @@ BerryTree_EventScript_PlantBerry::
 	special ObjectEventInteractionPlantBerryTree
 	incrementgamestat GAME_STAT_PLANTED_BERRIES
 	special IncrementDailyPlantedBerries
-	special ObjectEventInteractionGetBerryCountString
-	message BerryTree_Text_PlantedOneBerry
-	waitmessage
-	waitbuttonpress
 	return
 
 BerryTree_Text_ItsSoftLoamySoil:
 	.string "It's soft, loamy soil.$"
-
-BerryTree_Text_WantToPlant:
-	.string "It's soft, loamy soil.\n"
-	.string "Want to plant a BERRY?$"
-
-BerryTree_Text_PlantedOneBerry:
-	.string "{PLAYER} planted one {STR_VAR_1} in\n"
-	.string "the soft, loamy soil.$"
 
 BerryTree_Text_BerryGrowthStage1:
 .if OW_BERRY_SIX_STAGES == TRUE
@@ -308,54 +241,17 @@ BerryTree_Text_CareAdverbPoor:
 BerryTree_Text_CareAdverbGood:
 	.string "prettily$"
 
-BerryTree_Text_WantToPick:
-	.string "You found {STR_VAR_2} {STR_VAR_1}!\p"
-	.string "Do you want to pick the\n"
-	.string "{STR_VAR_1}?$"
-
 BerryTree_Text_PickedTheBerry:
 	.string "{PLAYER} picked the {STR_VAR_2} {STR_VAR_1}.$"
-
-BerryTree_Text_PutAwayBerry:
-	.string "{PLAYER} put away the {STR_VAR_1}\n"
-	.string "in the BAG's BERRIES POCKET.\p"
-	.string "The soil returned to its soft and\n"
-	.string "loamy state.$"
 
 BerryTree_Text_BerryPocketFull:
 	.string "The BAG's BERRIES POCKET is full.\p"
 	.string "The {STR_VAR_1} couldn't be taken.$"
 
-BerryTree_Text_BerryLeftUnpicked:
-	.string "{PLAYER} left the {STR_VAR_1}\n"
-	.string "unpicked.$"
-
-BerryTree_Text_WantToWater:
-	.string "Want to water the {STR_VAR_1} with the\n"
-	.string "WAILMER PAIL?$"
-
-BerryTree_Text_WateredTheBerry:
-	.string "{PLAYER} watered the {STR_VAR_1}.$"
-
-BerryTree_Text_PlantIsDelighted:
-	.string "The plant seems to be delighted.$"
-
 BerryTree_Text_ExclamationPoint:
 	.string "!$"
 
 .if OW_BERRY_MUTATIONS == TRUE
-BerryTree_EventScript_CheckBerryFullyGrown_Mutation:
-	msgbox BerryTree_Text_WantToPick_Mutation, MSGBOX_YESNO
-	goto_if_eq VAR_RESULT, YES, BerryTree_EventScript_PickBerry
-	goto_if_eq VAR_RESULT, NO, BerryTree_EventScript_CancelPickingBerry_Mutation
-
-BerryTree_EventScript_CancelPickingBerry_Mutation::
-	message BerryTree_Text_BerryLeftUnpicked_Mutation
-	waitmessage
-	waitbuttonpress
-	release
-	end
-
 BerryTree_EventScript_BerryPocketFull_Mutation::
 	message BerryTree_Text_BerryPocketFull_Mutation
 	waitmessage
@@ -370,10 +266,6 @@ BerryTree_EventScript_PickBerry_Mutation::
 	playfanfare MUS_OBTAIN_BERRY
 	waitmessage
 	waitfanfare
-	waitbuttonpress
-	message BerryTree_Text_PutAwayBerry_Mutation
-	waitmessage
-	waitbuttonpress
 	release
 	end
 
@@ -381,10 +273,6 @@ BerryTree_Text_WantToPick_Mutation:
 	.string "You found {STR_VAR_2} {STR_VAR_1}\n"
 	.string "and 1 {STR_VAR_3}!\p"
 	.string "Do you want to pick them?$"
-
-BerryTree_Text_BerryLeftUnpicked_Mutation:
-	.string "{PLAYER} left the {STR_VAR_1}\n"
-	.string "and the {STR_VAR_3} unpicked.$"
 
 BerryTree_Text_BerryPocketFull_Mutation:
 	.string "The BAG's BERRIES POCKET is full.\p"
@@ -394,13 +282,6 @@ BerryTree_Text_BerryPocketFull_Mutation:
 BerryTree_Text_PickedTheBerry_Mutation:
 	.string "{PLAYER} picked the {STR_VAR_2} {STR_VAR_1}\n"
 	.string "and the {STR_VAR_3}.$"
-
-BerryTree_Text_PutAwayBerry_Mutation:
-	.string "{PLAYER} put away the {STR_VAR_1}\n"
-	.string "and the {STR_VAR_3} in the BAG's\l"
-	.string "BERRIES POCKET.\p"
-	.string "The soil returned to its soft and\n"
-	.string "loamy state.$"
 .endif
 
 .if OW_BERRY_MULCH_USAGE == TRUE

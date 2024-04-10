@@ -2071,6 +2071,13 @@ static u8 CalcBerryYield(struct BerryTree *tree)
 
 static u8 GetBerryCountByBerryTreeId(u8 id)
 {
+    struct BerryTree *tree = GetBerryTreeInfo(id);
+    const struct Berry *berry = GetBerryInfo(tree->berry);
+    u8 currentMap = gMapHeader.regionMapSectionId;
+
+    if (currentMap == MAPSEC_ROUTE_119 || currentMap == MAPSEC_ROUTE_120 || currentMap == MAPSEC_ROUTE_123)
+        return berry->maxYield;
+
     return gSaveBlock1Ptr->berryTrees[id].berryYield;
 }
 
