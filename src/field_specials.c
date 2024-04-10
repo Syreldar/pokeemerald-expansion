@@ -4292,3 +4292,23 @@ void PreparePartyForSkyBattle(void)
     VarSet(B_VAR_SKY_BATTLE,participatingPokemonSlot);
     CompactPartySlots();
 }
+
+void ContextNpcGetTextColor(void)
+{
+    u8 gfxId;
+    const struct ObjectEventGraphicsInfo *graphicsInfo;
+
+    if (gSpecialVar_TextColor != 0xFF)
+        return;
+
+    if (gSelectedObjectEvent == 0)
+        gSpecialVar_TextColor = TEXT_COLOR_DARK_GRAY;
+    else
+    {
+        gfxId = gObjectEvents[gSelectedObjectEvent].graphicsId;
+        if (gfxId >= OBJ_EVENT_GFX_VAR_0)
+            gfxId = VarGetObjectEventGraphicsId(gfxId - OBJ_EVENT_GFX_VAR_0);
+        graphicsInfo = GetObjectEventGraphicsInfo(gfxId);
+        gSpecialVar_TextColor = graphicsInfo->textColor;
+    }
+}

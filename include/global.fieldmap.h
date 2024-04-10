@@ -243,6 +243,7 @@ struct ObjectEventGraphicsInfo
     /*0x18*/ const union AnimCmd *const *anims;
     /*0x1C*/ const struct SpriteFrameImage *images;
     /*0x20*/ const union AffineAnimCmd *const *affineAnims;
+    /*0x24*/ u16 textColor;
 };
 
 enum {

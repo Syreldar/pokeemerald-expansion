@@ -19,6 +19,7 @@
 #include "text_window.h"
 #include "window.h"
 #include "constants/songs.h"
+#include "field_specials.h"
 
 #define DLG_WINDOW_PALETTE_NUM 15
 #define DLG_WINDOW_BASE_TILE_NUM 0x200
@@ -2144,4 +2145,12 @@ void BufferSaveMenuText(u8 textId, u8 *dest, u8 color)
             *endOfString = EOS;
             break;
     }
+}
+
+void AddTextPrinterForMessageWithTextColor(bool8 allowSkippingDelayWithButtonPress)
+{
+    gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;
+
+    ContextNpcGetTextColor(); // sets gSpecialVar_TextColor
+    AddTextPrinterParameterized2(0, 1, gStringVar4, GetPlayerTextSpeedDelay(), NULL, gSpecialVar_TextColor, 1, 3);
 }
