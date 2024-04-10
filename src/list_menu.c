@@ -595,14 +595,14 @@ static u8 ListMenuInitInternal(struct ListMenuTemplate *listMenuTemplate, u16 sc
     return listTaskId;
 }
 
-static void ListMenuPrint(struct ListMenu *list, const u8 *str, u8 x, u8 y)
+static void ListMenuPrint(struct ListMenu *list, const u8 *str, u8 x, u8 y, const u8 *colorOverrides)
 {
     u8 colors[3];
     if (gListMenuOverride.enabled)
     {
         colors[0] = gListMenuOverride.fillValue;
-        colors[1] = gListMenuOverride.cursorPal;
-        colors[2] = gListMenuOverride.cursorShadowPal;
+        colors[1] = (colorOverrides[0] == 0) ? gListMenuOverride.cursorPal : colorOverrides[0];
+        colors[2] = (colorOverrides[1] == 0) ? gListMenuOverride.cursorShadowPal : colorOverrides[1];
         AddTextPrinterParameterized4(list->template.windowId,
                                      gListMenuOverride.fontId,
                                      x, y,
@@ -614,8 +614,8 @@ static void ListMenuPrint(struct ListMenu *list, const u8 *str, u8 x, u8 y)
     else
     {
         colors[0] = list->template.fillValue;
-        colors[1] = list->template.cursorPal;
-        colors[2] = list->template.cursorShadowPal;
+        colors[1] = (colorOverrides[0] == 0) ? list->template.cursorPal : colorOverrides[0];
+        colors[2] = (colorOverrides[1] == 0) ? list->template.cursorShadowPal : colorOverrides[1];
         AddTextPrinterParameterized4(list->template.windowId,
                                      list->template.fontId,
                                      x, y,
@@ -641,7 +641,7 @@ static void ListMenuPrintEntries(struct ListMenu *list, u16 startIndex, u16 yOff
         if (list->template.itemPrintFunc != NULL)
             list->template.itemPrintFunc(list->template.windowId, list->template.items[startIndex].id, y);
 
-        ListMenuPrint(list, list->template.items[startIndex].name, x, y);
+        ListMenuPrint(list, list->template.items[startIndex].name, x, y, list->template.items[startIndex].colors);
         startIndex++;
     }
 }
@@ -651,10 +651,11 @@ static void ListMenuDrawCursor(struct ListMenu *list)
     u8 yMultiplier = GetFontAttribute(list->template.fontId, FONTATTR_MAX_LETTER_HEIGHT) + list->template.itemVerticalPadding;
     u8 x = list->template.cursor_X;
     u8 y = list->selectedRow * yMultiplier + list->template.upText_Y;
+    u8 colors[2] = {0};
     switch (list->template.cursorKind)
     {
     case CURSOR_BLACK_ARROW:
-        ListMenuPrint(list, gText_SelectorArrow2, x, y);
+        ListMenuPrint(list, gText_SelectorArrow2, x, y, colors);
         break;
     case CURSOR_INVISIBLE:
         break;

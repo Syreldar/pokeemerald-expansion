@@ -33,6 +33,7 @@ struct ListMenuItem
 {
     const u8 *name;
     s32 id;
+    u8 colors[2];  // Override cursorPal and cursorShadowPal for specific list menu items
 };
 
 struct ListMenuTemplate
