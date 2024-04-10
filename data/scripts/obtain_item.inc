@@ -2,17 +2,29 @@
 .set AMOUNT, VAR_0x8001
 
 Std_ObtainItem::
+	copyvar VAR_0x8004, ITEMID
+	copyvar VAR_0x8005, AMOUNT
 	copyvar VAR_0x8006, ITEMID
 	additem ITEMID, AMOUNT
 	copyvar VAR_0x8007, VAR_RESULT
+	call_if_eq VAR_0x8007, FALSE, EventScript_TryAddItemToPCObtain
 	call EventScript_ObtainItemMessage
+	return
+
+EventScript_TryAddItemToPCObtain::
+	checkitemtype VAR_0x8004 @ Don't add if it's a key item
+	goto_if_eq VAR_RESULT, POCKET_KEY_ITEMS, EventScript_TryAddItemToPCObtainContinue
+	addpcitem VAR_0x8004, VAR_0x8005
+	goto_if_eq VAR_RESULT, FALSE, EventScript_TryAddItemToPCObtainContinue
+	setvar VAR_0x8007, 2  @ (0= full, 1= in pocket, 2=in PC) 
+EventScript_TryAddItemToPCObtainContinue::
 	return
 
 EventScript_ObtainItemMessage::
 	bufferitemnameplural STR_VAR_2, ITEMID, AMOUNT
 	checkitemtype ITEMID
 	call EventScript_BufferPocketNameAndTryFanfare
-	call_if_eq VAR_0x8007, TRUE, EventScript_ObtainedItem
+	call_if_ne VAR_0x8007, FALSE, EventScript_ObtainedItem
 	call_if_eq VAR_0x8007, FALSE, EventScript_NoRoomForItem
 	return
 
@@ -27,27 +39,27 @@ EventScript_BufferPocketNameAndTryFanfare::
 
 EventScript_BufferItemsPocket::
 	bufferstdstring STR_VAR_3, STDSTRING_ITEMS
-	call_if_eq VAR_0x8007, TRUE, EventScript_PlayFanfareObtainedItem
+	call_if_ne VAR_0x8007, FALSE, EventScript_PlayFanfareObtainedItem
 	return
 
 EventScript_BufferKeyItemsPocket::
 	bufferstdstring STR_VAR_3, STDSTRING_KEYITEMS
-	call_if_eq VAR_0x8007, TRUE, EventScript_PlayFanfareObtainedItem
+	call_if_ne VAR_0x8007, FALSE, EventScript_PlayFanfareObtainedItem
 	return
 
 EventScript_BufferPokeballsPocket::
 	bufferstdstring STR_VAR_3, STDSTRING_POKEBALLS
-	call_if_eq VAR_0x8007, TRUE, EventScript_PlayFanfareObtainedItem
+	call_if_ne VAR_0x8007, FALSE, EventScript_PlayFanfareObtainedItem
 	return
 
 EventScript_BufferTMHMsPocket::
 	bufferstdstring STR_VAR_3, STDSTRING_TMHMS
-	call_if_eq VAR_0x8007, TRUE, EventScript_PlayFanfareObtainedTMHM
+	call_if_ne VAR_0x8007, FALSE, EventScript_PlayFanfareObtainedTMHM
 	return
 
 EventScript_BufferBerriesPocket::
 	bufferstdstring STR_VAR_3, STDSTRING_BERRIES
-	call_if_eq VAR_0x8007, TRUE, EventScript_PlayFanfareObtainedItem
+	call_if_ne VAR_0x8007, FALSE, EventScript_PlayFanfareObtainedItem
 	return
 
 EventScript_ObtainedItem::
@@ -62,7 +74,7 @@ EventScript_ContinueObtainedItem:
 	delay 10
 	showitemdesc
 	waitfanfare
-	msgbox gText_PutItemInPocket, MSGBOX_DEFAULT
+	call EventScript_PutItemMsg
 	hideitemdesc
 	setvar VAR_RESULT, TRUE
 	return
@@ -112,18 +124,36 @@ Std_FindItem::
 	copyvar VAR_0x8006, ITEMID
 	checkitemspace ITEMID, AMOUNT
 	copyvar VAR_0x8007, VAR_RESULT
+	call_if_eq VAR_0x8007, FALSE, EventScript_CheckPCSpace
 	bufferitemnameplural STR_VAR_2, ITEMID, AMOUNT
 	checkitemtype ITEMID
 	call EventScript_BufferPocketNameAndTryFanfare
-	call_if_eq VAR_0x8007, TRUE, EventScript_PickUpItem
+	call_if_ne VAR_0x8007, FALSE, EventScript_PickUpItem
 	call_if_eq VAR_0x8007, FALSE, EventScript_NoRoomToPickUpItem
 	release
 	return
 
+EventScript_CheckPCSpace::
+	checkitemtype VAR_0x8004 @ Don't add if it's a key item
+	goto_if_eq VAR_RESULT, POCKET_KEY_ITEMS, EventScript_CheckPCSpaceContinue
+	pyramid_inchallenge
+	copyvar VAR_0x8004, ITEMID  @ pyramid_inchallenge modifies VAR_0x8004
+	goto_if_eq VAR_RESULT, TRUE, EventScript_CheckPCSpaceContinue
+	checkpcspace VAR_0x8004, VAR_0x8005
+	goto_if_eq VAR_RESULT, FALSE, EventScript_CheckPCSpaceContinue
+	setvar VAR_0x8007, 2  @ (0= full, 1= in pocket, 2=in PC) 
+EventScript_CheckPCSpaceContinue::
+	return
+
 EventScript_PickUpItem::
 	removeobject VAR_LAST_TALKED
+	goto_if_eq VAR_0x8007, 2, EventScript_PickUpItemPCAdd
 	additem VAR_0x8004, VAR_0x8005
 	copyvar VAR_0x8006, VAR_0x8004
+	goto EventScript_PickUpItemContinueAdd
+EventScript_PickUpItemPCAdd::
+	addpcitem VAR_0x8004, VAR_0x8005
+EventScript_PickUpItemContinueAdd::
 	specialvar VAR_RESULT, BufferTMHMMoveName
 	copyvar VAR_0x8008, VAR_RESULT
 	call_if_eq VAR_0x8008, TRUE, EventScript_FoundTMHM
@@ -135,7 +165,7 @@ EventScript_PickUpItem::
 	bufferitemnameplural STR_VAR_2, VAR_0x8004, VAR_0x8005
 	pyramid_inchallenge
 	goto_if_eq VAR_RESULT, TRUE, EventScript_PutBattlePyramidItemInBag
-	msgbox gText_PutItemInPocket, MSGBOX_DEFAULT
+	call EventScript_PutItemMsg
 	hideitemdesc
 	return
 
@@ -178,12 +208,22 @@ EventScript_HiddenItemScript::
 	copyvar VAR_0x8006, VAR_0x8005
 	additem VAR_0x8005
 	copyvar VAR_0x8007, VAR_RESULT
+	call_if_eq VAR_0x8007, FALSE, EventScript_TryAddItemToPCHidden
 	bufferitemnameplural STR_VAR_2, VAR_0x8005, 1
 	checkitemtype VAR_0x8005
 	call EventScript_BufferPocketNameAndTryFanfare
-	goto_if_eq VAR_0x8007, TRUE, EventScript_PickUpHiddenItem
+	goto_if_ne VAR_0x8007, FALSE, EventScript_PickUpHiddenItem
 	goto_if_eq VAR_0x8007, FALSE, EventScript_NoRoomForHiddenItem
 	end
+
+EventScript_TryAddItemToPCHidden::
+	checkitemtype VAR_0x8005 @ Don't add if it's a key item
+	goto_if_eq VAR_RESULT, POCKET_KEY_ITEMS, EventScript_TryAddHiddenItemToPCContinue
+	addpcitem VAR_0x8005
+	goto_if_eq VAR_RESULT, FALSE, EventScript_TryAddHiddenItemToPCContinue
+	setvar VAR_0x8007, 2  @ (0= full, 1= in pocket, 2=in PC) 
+EventScript_TryAddHiddenItemToPCContinue::
+	return
 
 EventScript_PickUpHiddenItem::
 	copyvar VAR_0x8008, VAR_0x8004
@@ -211,16 +251,25 @@ EventScript_PutHiddenItemInPocket::
 	waitfanfare
 	bufferitemnameplural STR_VAR_2, VAR_0x8004, 1
 	copyvar VAR_0x8004, VAR_0x8008
-	msgbox gText_PutItemInPocket, MSGBOX_DEFAULT
+	call EventScript_PutItemMsg
 	hideitemdesc
 	special TryPutTreasureInvestigatorsOnAir
 	special SetHiddenItemFlag
 	releaseall
 	end
 
+EventScript_PutItemMsg::
+	goto_if_eq VAR_0x8007, 2, EventScript_PutItemPCMsg
+	msgbox gText_PutItemInPocket, MSGBOX_DEFAULT
+	goto EventScript_PutItemContinueMsg
+EventScript_PutItemPCMsg::
+	msgbox gText_PutItemInPC, MSGBOX_DEFAULT
+EventScript_PutItemContinueMsg::
+	return
+
 EventScript_NoRoomForHiddenItem::
 	msgbox gText_PlayerFoundOneItem, MSGBOX_DEFAULT
-	msgbox gText_TooBadBagIsFull, MSGBOX_DEFAULT
+	msgbox gText_TooBadBagAndPCAreFull, MSGBOX_DEFAULT
 	setvar VAR_RESULT, 0
 	releaseall
 	end
