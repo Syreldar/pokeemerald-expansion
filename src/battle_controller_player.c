@@ -41,6 +41,8 @@
 #include "constants/rgb.h"
 #include "level_caps.h"
 #include "menu.h"
+#include "constants/battle_move_effects.h"
+#include "event_data.h"
 
 static void PlayerBufferExecCompleted(u32 battler);
 static void PlayerHandleLoadMonSprite(u32 battler);
@@ -83,6 +85,7 @@ static void HandleInputChooseMove(u32 battler);
 static void MoveSelectionDisplayPpNumber(u32 battler);
 static void MoveSelectionDisplayPpString(u32 battler);
 static void MoveSelectionDisplayMoveType(u32 battler);
+static void MoveSelectionDisplayMoveTypeDoubles(u32 battler, u8 targetId);
 static void MoveSelectionDisplayMoveDescription(u32 battler);
 static void MoveSelectionDisplayMoveNames(u32 battler);
 static void HandleMoveSwitching(u32 battler);
@@ -517,6 +520,8 @@ static void HandleInputChooseTarget(u32 battler)
                     break;
                 }
 
+                MoveSelectionDisplayMoveTypeDoubles(battler, GetBattlerPosition(gMultiUsePlayerCursor));
+
                 if (gAbsentBattlerFlags & gBitTable[gMultiUsePlayerCursor]
                  || !CanTargetBattler(battler, gMultiUsePlayerCursor, move))
                     i = 0;
@@ -566,6 +571,8 @@ static void HandleInputChooseTarget(u32 battler)
                     i++;
                     break;
                 }
+
+                MoveSelectionDisplayMoveTypeDoubles(battler, GetBattlerPosition(gMultiUsePlayerCursor));
 
                 if (gAbsentBattlerFlags & gBitTable[gMultiUsePlayerCursor]
                  || !CanTargetBattler(battler, gMultiUsePlayerCursor, move))
@@ -1757,6 +1764,75 @@ static void MoveSelectionDisplayPpNumber(u32 battler)
     BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_PP_REMAINING);
 }
 
+static void MulModifier(u16 *modifier, u16 val)
+{
+    *modifier = UQ_4_12_TO_INT((*modifier * val) + UQ_4_12_ROUND);
+}
+
+u16 CalculateModifier(u8 moveType, u8 targetId, bool8 isInverse)
+{
+    u16 mod = sTypeEffectivenessTable[moveType][gBattleMons[targetId].type1];
+
+    // Check if the target has a second type and it's different from the first
+    if (gBattleMons[targetId].type2 != gBattleMons[targetId].type1)
+    {
+        u16 mod2 = sTypeEffectivenessTable[moveType][gBattleMons[targetId].type2];
+        MulModifier(&mod, mod2);
+    }
+
+    return mod;
+}
+
+u8 DetermineEffectiveness(u16 mod, bool8 isInverse)
+{
+    if (mod == UQ_4_12(0.0))
+        return isInverse ? B_WIN_MOVE_X4_EFFECTIVENESS : B_WIN_MOVE_NO_EFFECT;
+    else if (mod <= UQ_4_12(0.5))
+        return isInverse ? B_WIN_MOVE_X4_EFFECTIVENESS : B_WIN_MOVE_X0_5_EFFECTIVENESS;
+    else if (mod >= UQ_4_12(2.0))
+        return isInverse ? B_WIN_MOVE_X0_5_EFFECTIVENESS : B_WIN_MOVE_X4_EFFECTIVENESS;
+
+    return B_WIN_MOVE_TYPE;
+}
+
+u8 TypeEffectiveness(struct ChooseMoveStruct *moveInfo, u32 battler, u8 targetId)
+{
+    bool8 isInverse = (B_FLAG_INVERSE_BATTLE != 0 && FlagGet(B_FLAG_INVERSE_BATTLE));
+    struct MoveInfo currentMoveInfo = gMovesInfo[moveInfo->moves[gMoveSelectionCursor[battler]]];
+
+    if (currentMoveInfo.power == 0)
+        return B_WIN_MOVE_TYPE;
+
+    u16 mod = CalculateModifier(currentMoveInfo.type, targetId, isInverse);
+    
+    // Check for two-typed move
+    if (currentMoveInfo.effect == EFFECT_TWO_TYPED_MOVE)
+    {
+        u16 mod2 = CalculateModifier(currentMoveInfo.argument, targetId, isInverse);
+        MulModifier(&mod, mod2);
+    }
+
+    // Determine effectiveness
+    return DetermineEffectiveness(mod, isInverse);
+}
+
+static void MoveSelectionDisplayMoveTypeDoubles(u32 battler, u8 targetId)
+{
+    u8 *txtPtr;
+    struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct*)(&gBattleResources->bufferA[battler][4]);
+
+    txtPtr = StringCopy(gDisplayedStringBattle, gText_MoveInterfaceType);
+    txtPtr[0] = EXT_CTRL_CODE_BEGIN;
+    txtPtr++;
+    txtPtr[0] = 6;
+    txtPtr++;
+    txtPtr[0] = 1;
+    txtPtr++;
+
+    StringCopy(txtPtr, gTypesInfo[gMovesInfo[moveInfo->moves[gMoveSelectionCursor[battler]]].type].name);
+    BattlePutTextOnWindow(gDisplayedStringBattle, TypeEffectiveness(moveInfo, battler, targetId));
+}
+
 static void MoveSelectionDisplayMoveType(u32 battler)
 {
     u8 *txtPtr;
@@ -1786,7 +1862,7 @@ static void MoveSelectionDisplayMoveType(u32 battler)
         type = gMovesInfo[moveInfo->moves[gMoveSelectionCursor[battler]]].type;
 
     StringCopy(txtPtr, gTypesInfo[type].name);
-    BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_TYPE);
+    BattlePutTextOnWindow(gDisplayedStringBattle, TypeEffectiveness(moveInfo, battler, 1));
     MoveSelectionDisplaySplitIcon(battler);
 }
 
@@ -2399,15 +2475,15 @@ static void PlayerHandleBattleDebug(u32 battler)
 
 static void MoveSelectionDisplaySplitIcon(u32 battler)
 {
-	static const u16 sSplitIcons_Pal[] = INCBIN_U16("graphics/interface/split_icons_battle.gbapal");
-	static const u8 sSplitIcons_Gfx[] = INCBIN_U8("graphics/interface/split_icons_battle.4bpp");
-	struct ChooseMoveStruct *moveInfo;
-	int icon;
+    static const u16 sSplitIcons_Pal[] = INCBIN_U16("graphics/interface/split_icons_battle.gbapal");
+    static const u8 sSplitIcons_Gfx[] = INCBIN_U8("graphics/interface/split_icons_battle.4bpp");
+    struct ChooseMoveStruct *moveInfo;
+    int icon;
 
-	moveInfo = (struct ChooseMoveStruct*)(&gBattleResources->bufferA[battler][4]);
-	icon = GetBattleMoveCategory(moveInfo->moves[gMoveSelectionCursor[battler]]);
-	LoadPalette(sSplitIcons_Pal, 10 * 0x10, 0x20);
-	BlitBitmapToWindow(B_WIN_SPLIT_ICON, sSplitIcons_Gfx + 0x80 * icon, 0, 0, 16, 16);
-	PutWindowTilemap(B_WIN_SPLIT_ICON);
-	CopyWindowToVram(B_WIN_SPLIT_ICON, 3);
+    moveInfo = (struct ChooseMoveStruct*)(&gBattleResources->bufferA[battler][4]);
+    icon = GetBattleMoveCategory(moveInfo->moves[gMoveSelectionCursor[battler]]);
+    LoadPalette(sSplitIcons_Pal, 10 * 0x10, 0x20);
+    BlitBitmapToWindow(B_WIN_SPLIT_ICON, sSplitIcons_Gfx + 0x80 * icon, 0, 0, 16, 16);
+    PutWindowTilemap(B_WIN_SPLIT_ICON);
+    CopyWindowToVram(B_WIN_SPLIT_ICON, 3);
 }
