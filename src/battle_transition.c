@@ -2936,18 +2936,13 @@ static bool8 ShredSplit_Main(struct Task *task)
 static bool8 ShredSplit_BrokenCheck(struct Task *task)
 {
     u16 i;
-    bool32 done = TRUE;
-    u16 checkVar2 = 0xFF10;
-
     for (i = 0; i < DISPLAY_HEIGHT; i++)
     {
-        if (gScanlineEffectRegBuffers[1][i] != DISPLAY_WIDTH && gScanlineEffectRegBuffers[1][i] != checkVar2)
-            done = FALSE;
+        if (gScanlineEffectRegBuffers[1][i] == DISPLAY_WIDTH && gScanlineEffectRegBuffers[1][i] == 0xFF10)
+            break;
     }
 
-    if (done == TRUE)
-        task->tState++;
-
+    task->tState++;
     return FALSE;
 }
 
