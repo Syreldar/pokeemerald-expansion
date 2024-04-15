@@ -338,7 +338,7 @@ extern const u8 gText_WirelessNotConnected[];
 extern const u8 gText_MysteryGiftCantUse[];
 extern const u8 gText_MysteryEventsCantUse[];
 extern const u8 gText_Birch_Welcome[];
-extern const u8 gText_ThisIsAPokemon[];
+extern const u8 gText_Birch_Pokemon[];
 extern const u8 gText_Birch_MainSpeech[];
 extern const u8 gText_Birch_AndYouAre[];
 extern const u8 gText_Birch_BoyOrGirl[];
@@ -392,6 +392,19 @@ extern const u8 gText_DefaultNameLillie[];
 extern const u8 gText_DefaultNameTerra[];
 extern const u8 gText_DefaultNameLucy[];
 extern const u8 gText_DefaultNameHalie[];
+
+// JUJJ
+extern const u8 gText_DefaultNamePlotino[];
+extern const u8 gText_DefaultNameLuca[];
+extern const u8 gText_DefaultNameEros[];
+extern const u8 gText_DefaultNameRicardo[];
+extern const u8 gText_DefaultNameSgrodo[];
+
+extern const u8 gText_DefaultNamePlotina[];
+extern const u8 gText_DefaultNameMercy[];
+extern const u8 gText_DefaultNameTiziana[];
+extern const u8 gText_DefaultNameChantal[];
+extern const u8 gText_DefaultNameSgroda[];
 
 extern const u8 gText_BirchInTrouble[];
 extern const u8 gText_ConfirmStarterChoice[];
