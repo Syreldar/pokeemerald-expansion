@@ -245,6 +245,7 @@ extern const u8 BattleScript_SuccessBallThrow[];
 extern const u8 BattleScript_WallyBallThrow[];
 extern const u8 BattleScript_ShakeBallThrow[];
 extern const u8 BattleScript_TrainerBallBlock[];
+extern const u8 BattleScript_LegendaryBallBlock[];
 extern const u8 BattleScript_RunByUsingItem[];
 extern const u8 BattleScript_ActionWatchesCarefully[];
 extern const u8 BattleScript_ActionGetNear[];
@@ -825,5 +826,7 @@ extern const u8 BattleScript_EffectFilletAway[];
 extern const u8 BattleScript_EffectShedTail[];
 extern const u8 BattleScript_EffectUpperHand[];
 extern const u8 BattleScript_EffectTidyUp[];
+extern const u8 BattleScript_WildBattleVictory[];
+extern const u8 BattleScript_FaintWildMon[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

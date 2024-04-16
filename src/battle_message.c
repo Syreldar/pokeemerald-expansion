@@ -401,7 +401,8 @@ static const u8 sText_ThrewPokeblockAtPkmn[] = _("{B_PLAYER_NAME} threw a {POKEB
 static const u8 sText_OutOfSafariBalls[] = _("{PLAY_SE SE_DING_DONG}ANNOUNCER: You're out of\nSAFARI BALLS! Game over!\p");
 static const u8 sText_OpponentMon1Appeared[] = _("{B_OPPONENT_MON1_NAME} appeared!\p");
 static const u8 sText_WildPkmnAppeared[] = _("Wild {B_OPPONENT_MON1_NAME} appeared!\p");
-static const u8 sText_LegendaryPkmnAppeared[] = _("Wild {B_OPPONENT_MON1_NAME} appeared!\p");
+static const u8 sText_LegendaryPkmnAppeared[] = _("Wild {B_OPPONENT_MON1_NAME} wants to battle!\p{B_OPPONENT_MON1_NAME}'s aura is overwhelming!\nIts power is undeniable!\p");
+static const u8 sText_VictoryCatch[] = _("Wild {B_OPPONENT_MON1_NAME} submits.\nShall I capture it?");
 static const u8 sText_WildPkmnAppearedPause[] = _("Wild {B_OPPONENT_MON1_NAME} appeared!{PAUSE 127}");
 static const u8 sText_TwoWildPkmnAppeared[] = _("Wild {B_OPPONENT_MON1_NAME} and\n{B_OPPONENT_MON2_NAME} appeared!\p");
 static const u8 sText_Trainer1WantsToBattle[] = _("{B_TRAINER1_CLASS} {B_TRAINER1_NAME}\nwould like to battle!\p");
@@ -416,6 +417,7 @@ static const u8 sText_TwoLinkTrainersSentOutPkmn[] = _("{B_LINK_OPPONENT1_NAME} 
 static const u8 sText_LinkTrainerSentOutPkmn2[] = _("{B_LINK_OPPONENT1_NAME} sent out\n{B_BUFF1}!");
 static const u8 sText_LinkTrainerMultiSentOutPkmn[] = _("{B_LINK_SCR_TRAINER_NAME} sent out\n{B_BUFF1}!");
 static const u8 sText_GoPkmn[] = _("Go! {B_PLAYER_MON1_NAME}!");
+static const u8 sText_BeCarefulPkmn[] = _("Be careful, {B_PLAYER_MON1_NAME}!");
 static const u8 sText_GoTwoPkmn[] = _("Go! {B_PLAYER_MON1_NAME} and\n{B_PLAYER_MON2_NAME}!");
 static const u8 sText_GoPkmn2[] = _("Go! {B_BUFF1}!");
 static const u8 sText_DoItPkmn[] = _("Do it! {B_BUFF1}!");
@@ -480,6 +482,8 @@ static const u8 sText_WallyUsedItem[] = _("WALLY used\n{B_LAST_ITEM}!");
 static const u8 sText_Trainer1UsedItem[] = _("{B_ATK_TRAINER_CLASS} {B_ATK_TRAINER_NAME}\nused {B_LAST_ITEM}!");
 static const u8 sText_TrainerBlockedBall[] = _("The TRAINER blocked the BALL!");
 static const u8 sText_DontBeAThief[] = _("Don't be a thief!");
+static const u8 sText_LegendaryFendedBallOff[] = _("Wild {B_DEF_NAME} fended the BALL off!");
+static const u8 sText_YouMustWeakenIt[] = _("You must weaken it before\nattempting to catch it!");
 static const u8 sText_ItDodgedBall[] = _("It dodged the thrown BALL!\nThis POKéMON can't be caught!");
 static const u8 sText_YouMissedPkmn[] = _("You missed the POKéMON!");
 static const u8 sText_PkmnBrokeFree[] = _("Oh, no!\nThe POKéMON broke free!");
@@ -1525,6 +1529,8 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_PKMNBECAMEWEAKERTOFIRE - BATTLESTRINGS_TABLE_START] = sText_PkmnBecameWeakerToFire,
     [STRINGID_ABOUTTOUSEPOLTERGEIST - BATTLESTRINGS_TABLE_START] = sText_PkmnAboutToBeAttackedByItsItem,
     [STRINGID_CANTESCAPEBECAUSEOFCURRENTMOVE - BATTLESTRINGS_TABLE_START] = sText_CantEscapeBecauseOfCurrentMove,
+    [STRINGID_LEGENDARYFENDEDBALLOFF - BATTLESTRINGS_TABLE_START] = sText_LegendaryFendedBallOff,
+    [STRINGID_YOUMUSTWEAKENIT - BATTLESTRINGS_TABLE_START] = sText_YouMustWeakenIt,
     [STRINGID_PKMNTOOKTARGETHIGH - BATTLESTRINGS_TABLE_START] = sText_PkmnTookTargetHigh,
     [STRINGID_TARGETTOOHEAVY - BATTLESTRINGS_TABLE_START] = sText_TargetTooHeavy,
     [STRINGID_ATTACKERLOSTELECTRICTYPE - BATTLESTRINGS_TABLE_START] = sText_AttackerLostElectricType,
@@ -1543,6 +1549,7 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_ITEMWASUSEDUP - BATTLESTRINGS_TABLE_START] = sText_ItemWasUsedUp,
     [STRINGID_ATTACKERLOSTITSTYPE - BATTLESTRINGS_TABLE_START] = sText_AttackerLostItsType,
     [STRINGID_CLOAKEDINAHARSHLIGHT - BATTLESTRINGS_TABLE_START] = sText_PkmnIsCloakedInAHarshLight,
+    [STRINGID_VICTORYCATCH - BATTLESTRINGS_TABLE_START] = sText_VictoryCatch,
 };
 
 const u16 gTrainerUsedItemStringIds[] =
@@ -2801,6 +2808,10 @@ void BufferStringBattle(u16 stringID, u32 battler)
                     stringPtr = sText_LinkPartnerSentOutPkmnGoPkmn;
                 else
                     stringPtr = sText_GoTwoPkmn;
+            }
+            else if (gBattleTypeFlags & BATTLE_TYPE_LEGENDARY)
+            {
+                stringPtr = sText_BeCarefulPkmn;
             }
             else
             {

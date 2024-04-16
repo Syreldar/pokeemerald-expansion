@@ -707,8 +707,12 @@
 #define STRINGID_BIZARREARENACREATED                  705
 #define STRINGID_BIZARREAREACREATED                   706
 #define STRINGID_TIDYINGUPCOMPLETE                    707
+#define STRINGID_LEGENDARYFENDEDBALLOFF               708
+#define STRINGID_YOUMUSTWEAKENIT                      709
+#define STRINGID_BAGISFULL                            710
+#define STRINGID_VICTORYCATCH                         711
 
-#define BATTLESTRINGS_COUNT                           708
+#define BATTLESTRINGS_COUNT                           712
 
 // This is the string id that gBattleStringsTable starts with.
 // String ids before this (e.g. STRINGID_INTROMSG) are not in the table,

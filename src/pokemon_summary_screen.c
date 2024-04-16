@@ -1198,6 +1198,8 @@ void ShowSelectMovePokemonSummaryScreen(struct Pokemon *mons, u8 monIndex, u8 ma
 {
     ShowPokemonSummaryScreen(SUMMARY_MODE_SELECT_MOVE, mons, monIndex, maxMonIndex, callback);
     sMonSummaryScreen->newMove = newMove;
+    if (gBattleStruct->victoryCatchState) // Update state to hide enemy sprite when learning new moves after declining a victory catch
+        gBattleStruct->victoryCatchState = VICTORY_CATCH_FAINTED;
 }
 
 void ShowPokemonSummaryScreenHandleDeoxys(u8 mode, struct BoxPokemon *mons, u8 monIndex, u8 maxMonIndex, void (*callback)(void))

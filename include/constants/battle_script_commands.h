@@ -238,6 +238,8 @@
 #define VARIOUS_STORE_HEALING_WISH                   146
 #define VARIOUS_HIT_SWITCH_TARGET_FAILED             147
 #define VARIOUS_TRY_REVIVAL_BLESSING                 148
+#define VARIOUS_JUMP_IF_NO_BALLS                     149
+#define VARIOUS_CATCH_AFTER_VICTORY                  150
 
 // Cmd_manipulatedamage
 #define DMG_CHANGE_SIGN            0
