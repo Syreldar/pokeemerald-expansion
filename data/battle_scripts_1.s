@@ -9955,3 +9955,24 @@ BattleScript_EffectSnow::
 	call BattleScript_CheckPrimalWeather
 	setsnow
 	goto BattleScript_MoveWeatherChange
+
+BattleScript_WildBattleVictory::
+	playfaintcry BS_SCRIPTING
+	waitcry BS_SCRIPTING
+	jumpifnoballs BattleScript_FaintWildMon
+	printstring STRINGID_VICTORYCATCH
+	setbyte gBattleCommunication, 0
+	yesnobox
+	jumpifbyte CMP_NOT_EQUAL, gBattleCommunication + 1, 0, BattleScript_FaintWildMon
+	catchaftervictory
+	end2
+
+BattleScript_FaintWildMon::
+	pause B_WAIT_TIME_SHORT
+	dofaintanimation BS_SCRIPTING
+	printstring STRINGID_TARGETFAINTED
+	setbyte sGIVEEXP_STATE, 0
+	getexp BS_SCRIPTING
+	cleareffectsonfaint BS_SCRIPTING
+	setbyte gBattleOutcome, B_OUTCOME_WON
+	finishturn
