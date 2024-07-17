@@ -29,17 +29,15 @@
 #define ABILITYEFFECT_IMMUNITY                   6
 #define ABILITYEFFECT_SYNCHRONIZE                7
 #define ABILITYEFFECT_ATK_SYNCHRONIZE            8
-#define ABILITYEFFECT_TRACE1                     9
-#define ABILITYEFFECT_TRACE2                     10
-#define ABILITYEFFECT_MOVE_END_OTHER             11
-#define ABILITYEFFECT_NEUTRALIZINGGAS            12
-#define ABILITYEFFECT_FIELD_SPORT                13 // Only used if B_SPORT_TURNS >= GEN_6
-#define ABILITYEFFECT_ON_WEATHER                 14
-#define ABILITYEFFECT_ON_TERRAIN                 15
-#define ABILITYEFFECT_SWITCH_IN_TERRAIN          16
-#define ABILITYEFFECT_SWITCH_IN_WEATHER          17
-#define ABILITYEFFECT_OPPORTUNIST                18
-#define ABILITYEFFECT_SWITCH_IN_STATUSES         19
+#define ABILITYEFFECT_MOVE_END_OTHER             9
+#define ABILITYEFFECT_NEUTRALIZINGGAS            10
+#define ABILITYEFFECT_FIELD_SPORT                11 // Only used if B_SPORT_TURNS >= GEN_6
+#define ABILITYEFFECT_ON_WEATHER                 12
+#define ABILITYEFFECT_ON_TERRAIN                 13
+#define ABILITYEFFECT_SWITCH_IN_TERRAIN          14
+#define ABILITYEFFECT_SWITCH_IN_WEATHER          15
+#define ABILITYEFFECT_OPPORTUNIST                16
+#define ABILITYEFFECT_SWITCH_IN_STATUSES         17
 // Special cases
 #define ABILITYEFFECT_MUD_SPORT                  252 // Only used if B_SPORT_TURNS >= GEN_6
 #define ABILITYEFFECT_WATER_SPORT                253 // Only used if B_SPORT_TURNS >= GEN_6
@@ -91,6 +89,7 @@ enum
     CANCELLER_POWDER_MOVE,
     CANCELLER_POWDER_STATUS,
     CANCELLER_THROAT_CHOP,
+    CANCELLER_EXPLODING_DAMP,
     CANCELLER_MULTIHIT_MOVES,
     CANCELLER_Z_MOVES,
     CANCELLER_END,
@@ -154,7 +153,7 @@ u32 IsAbilityOnOpposingSide(u32 battler, u32 ability);
 u32 IsAbilityOnField(u32 ability);
 u32 IsAbilityOnFieldExcept(u32 battler, u32 ability);
 u32 IsAbilityPreventingEscape(u32 battler);
-bool32 IsBattlerProtected(u32 battler, u32 move);
+bool32 IsBattlerProtected(u32 battlerAtk, u32 battlerDef, u32 move);
 bool32 CanBattlerEscape(u32 battler); // no ability check
 void BattleScriptExecute(const u8 *BS_ptr);
 void BattleScriptPushCursorAndCallback(const u8 *BS_ptr);
@@ -189,7 +188,7 @@ bool32 IsBattlerMegaEvolved(u32 battler);
 bool32 IsBattlerPrimalReverted(u32 battler);
 bool32 IsBattlerUltraBursted(u32 battler);
 u16 GetBattleFormChangeTargetSpecies(u32 battler, u16 method);
-bool32 TryBattleFormChange(u32 battler, u16 method);
+bool32 TryBattleFormChange(u32 battler, u32 method);
 bool32 DoBattlersShareType(u32 battler1, u32 battler2);
 bool32 CanBattlerGetOrLoseItem(u32 battler, u16 itemId);
 u32 GetIllusionMonSpecies(u32 battler);
@@ -201,9 +200,11 @@ u8 GetBattleMoveCategory(u32 moveId);
 bool32 CanFling(u32 battler);
 bool32 IsTelekinesisBannedSpecies(u16 species);
 bool32 IsHealBlockPreventingMove(u32 battler, u32 move);
+bool32 IsBelchPreventingMove(u32 battler, u32 move);
 bool32 HasEnoughHpToEatBerry(u32 battler, u32 hpFraction, u32 itemId);
 bool32 IsPartnerMonFromSameTrainer(u32 battler);
 u8 GetCategoryBasedOnStats(u32 battler);
+void SetShellSideArmCategory(void);
 bool32 MoveIsAffectedBySheerForce(u32 move);
 bool32 TestIfSheerForceAffected(u32 battler, u16 move);
 void TryRestoreHeldItems(void);
@@ -232,17 +233,16 @@ bool32 MoveHasAdditionalEffectSelf(u32 move, u32 moveEffect);
 bool32 MoveHasAdditionalEffectSelfArg(u32 move, u32 moveEffect, u32 argument);
 bool32 MoveHasChargeTurnAdditionalEffect(u32 move);
 
-bool32 CanSleep(u32 battler);
-bool32 CanBePoisoned(u32 battlerAttacker, u32 battlerTarget);
-bool32 CanBeBurned(u32 battler);
-bool32 CanBeParalyzed(u32 battler);
+bool32 CanBeSlept(u32 battler, u32 ability);
+bool32 CanBePoisoned(u32 battlerAtk, u32 battlerDef, u32 defAbility);
+bool32 CanBeBurned(u32 battler, u32 ability);
+bool32 CanBeParalyzed(u32 battler, u32 ability);
 bool32 CanBeFrozen(u32 battler);
 bool32 CanGetFrostbite(u32 battler);
 bool32 CanBeConfused(u32 battler);
 bool32 IsBattlerTerrainAffected(u32 battler, u32 terrainFlag);
 u32 GetBattlerAffectionHearts(u32 battler);
 u32 CountBattlerStatIncreases(u32 battler, bool32 countEvasionAcc);
-bool32 IsMyceliumMightOnField(void);
 bool32 ChangeTypeBasedOnTerrain(u32 battler);
 void RemoveConfusionStatus(u32 battler);
 u8 GetBattlerGender(u32 battler);

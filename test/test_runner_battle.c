@@ -12,7 +12,6 @@
 #include "random.h"
 #include "test/battle.h"
 #include "window.h"
-#include "text.h"
 #include "constants/trainers.h"
 
 #if defined(__INTELLISENSE__)
@@ -1186,13 +1185,6 @@ static s32 TryMessage(s32 i, s32 n, const u8 *string)
                 if (string[j] == CHAR_PROMPT_CLEAR)
                     j++;
             }
-            if (DECAP_ENABLED && (string[j] == CHAR_FIXED_CASE || string[j] == CHAR_UNFIX_CASE))
-            {
-                // Ignores case-fixing characters in string
-                // k will be incremented in 'continue'
-                k--;
-                continue;
-            }
             if (string[j] != event->pattern[k])
             {
                 break;
@@ -1561,7 +1553,7 @@ void OpenPokemon(u32 sourceLine, u32 side, u32 species)
     DATA.currentSide = side;
     DATA.currentPartyIndex = *partySize;
     DATA.currentMon = &party[DATA.currentPartyIndex];
-    DATA.gender = MON_MALE;
+    DATA.gender = 0xFF; // Male
     DATA.nature = NATURE_HARDY;
     (*partySize)++;
 
