@@ -58,7 +58,7 @@ extern struct PartyMenu gPartyMenu;
 extern bool8 gPartyMenuUseExitCallback;
 extern u8 gSelectedMonPartyId;
 extern MainCallback gPostMenuFieldCallback;
-extern u8 gSelectedOrderFromParty[MAX_FRONTIER_PARTY_SIZE];
+extern u8 gSelectedOrderFromParty[PARTY_SIZE];
 extern u8 gBattlePartyCurrentOrder[PARTY_SIZE / 2];
 
 extern const struct SpriteSheet gSpriteSheet_HeldItem;
@@ -113,7 +113,7 @@ enum ItemEffectType GetItemEffectType(enum Item item);
 void CB2_PartyMenuFromStartMenu(void);
 void CB2_ChooseMonToGiveItem(void);
 void ChooseMonToGiveMailFromMailbox(void);
-void InitChooseHalfPartyForBattle(u8 unused);
+void InitChooseHalfPartyForBattle(u8 maxBattleEntries);
 void ClearSelectedPartyOrder(void);
 void ChooseMonForTradingBoard(enum PartyMenuType menuType, MainCallback callback);
 void ChooseMonForMoveTutor(void);
@@ -149,6 +149,7 @@ bool32 SetUpFieldMove_RockClimb(void);
 
 #if TESTING
 s8 Test_UpdatePartySelectionSingleLayout(s8 slotId, s8 movementDir, bool8 chooseHalf, u8 lastSelectedSlot);
+u8 Test_GetMultiBattleMaxEntries(u8 maxBattleEntries);
 #endif
 
 #endif // GUARD_PARTY_MENU_H

@@ -217,7 +217,8 @@ EWRAM_DATA u8 gSelectedMonPartyId = 0;
 EWRAM_DATA MainCallback gPostMenuFieldCallback = NULL;
 static EWRAM_DATA u16 *sSlot1TilemapBuffer = 0; // for switching party slots
 static EWRAM_DATA u16 *sSlot2TilemapBuffer = 0; //
-EWRAM_DATA u8 gSelectedOrderFromParty[MAX_FRONTIER_PARTY_SIZE] = {0};
+EWRAM_DATA u8 gSelectedOrderFromParty[PARTY_SIZE] = {0};
+static EWRAM_DATA u8 sMaxBattleEntries = 0;
 static EWRAM_DATA enum Item sPartyMenuItemId = 0;
 EWRAM_DATA u8 gBattlePartyCurrentOrder[PARTY_SIZE / 2] = {0}; // bits 0-3 are the current pos of Slot 1, 4-7 are Slot 2, and so on
 static EWRAM_DATA u8 sInitialLevel = 0;
@@ -7278,8 +7279,9 @@ static void TryGiveMailToSelectedMon(u8 taskId)
     gTasks[taskId].func = Task_UpdateHeldItemSpriteAndClosePartyMenu;
 }
 
-void InitChooseHalfPartyForBattle(u8 unused)
+void InitChooseHalfPartyForBattle(u8 maxBattleEntries)
 {
+    sMaxBattleEntries = max(1, min(maxBattleEntries, PARTY_SIZE));
     ClearSelectedPartyOrder();
     InitPartyMenu(PARTY_MENU_TYPE_CHOOSE_HALF, PARTY_LAYOUT_SINGLE, PARTY_ACTION_CHOOSE_MON, FALSE, PARTY_MSG_CHOOSE_MON, Task_HandleChooseMonInput, gMain.savedCallback);
     gPartyMenu.task = Task_ValidateChosenHalfParty;
@@ -7410,7 +7412,7 @@ static u8 GetMaxBattleEntries(void)
     switch (VarGet(VAR_FRONTIER_FACILITY))
     {
     case FACILITY_MULTI_OR_EREADER:
-        return MULTI_PARTY_SIZE;
+        return sMaxBattleEntries;
     case FACILITY_UNION_ROOM:
         return UNION_ROOM_PARTY_SIZE;
     default: // Battle Frontier
@@ -8616,5 +8618,19 @@ s8 Test_UpdatePartySelectionSingleLayout(s8 slotId, s8 movementDir, bool8 choose
 
     sPartyMenuInternal = savedInternal;
     return slotId;
+}
+
+u8 Test_GetMultiBattleMaxEntries(u8 maxBattleEntries)
+{
+    u8 savedMaxBattleEntries = sMaxBattleEntries;
+    u16 savedFacility = VarGet(VAR_FRONTIER_FACILITY);
+    u8 result;
+
+    sMaxBattleEntries = max(1, min(maxBattleEntries, PARTY_SIZE));
+    VarSet(VAR_FRONTIER_FACILITY, FACILITY_MULTI_OR_EREADER);
+    result = GetMaxBattleEntries();
+    sMaxBattleEntries = savedMaxBattleEntries;
+    VarSet(VAR_FRONTIER_FACILITY, savedFacility);
+    return result;
 }
 #endif

@@ -282,6 +282,19 @@
 	.endif
 	.endm
 
+	@ Opens the multi-battle party selection menu, allowing up to maxEntries to be chosen.
+	.macro choosepartyforbattle maxEntries:req
+	callnative Script_ChoosePartyForBattle
+	.2byte \maxEntries
+	waitstate
+	.endm
+
+	@ Reduces the player's party to the first selectedMonsCount entries from the selection menu.
+	.macro reduceplayerpartytoselectedmons selectedMonsCount:req
+	callnative Script_ReducePlayerPartyToSelectedMons
+	.2byte \selectedMonsCount
+	.endm
+
 	@ Replaces the script with the function stored at func. Execution returns to the bytecode script when func returns TRUE.
 	.macro gotonative func:req, requests_effects=0
 	.byte SCR_OP_GOTONATIVE
