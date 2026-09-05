@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Usage: python3 make_teachables.py [--tutors] SOURCE_DIR [LEARNSETS_JSON]
+Usage: python3 make_teachables.py [--tutors] SOURCE_DIR [LEARNSETS_JSON [LEVEL_UP_TMS_JSON]]
 
 Build a C-header defining the set of teachable moves for each configured-on
 species-family based on the moves defined in LEARNSETS_JSON.
@@ -72,13 +72,14 @@ def extract_tm_litteracy_config() -> bool:
                 config = True
     return config
 
-def prepare_output(all_learnables: dict[str, list[str]], tms: list[str], tutors: list[str], special_movesets, repo_teaching_types, header: str, overrides=None) -> str:
+def prepare_output(all_learnables: dict[str, list[str]], tms: list[str], tutors: list[str], special_movesets, repo_teaching_types, header: str, overrides=None, level_up_tms=None) -> str:
     """
     Build the file content for teachable_learnsets.h.
     """
 
     tm_litteracy_config = extract_tm_litteracy_config()
     overrides = overrides or {}
+    level_up_tms = level_up_tms or {}
 
     cursor = 0
     new = header + dedent("""
@@ -118,6 +119,7 @@ def prepare_output(all_learnables: dict[str, list[str]], tms: list[str], tutors:
         # Project overrides take precedence over all default teaching rules.
         # Filter through the available moves again to retain TM/tutor ordering.
         moves = set(repo_species_teachables)
+        moves.update(set(level_up_tms.get(species, [])) & set(tms))
         species_overrides = overrides.get(species_upper, {})
         moves.update(species_overrides.get("add", []))
         moves.difference_update(species_overrides.get("remove", []))
@@ -202,9 +204,9 @@ def main():
         tutor_mode = True
         SOURCE_DIR = pathlib.Path(sys.argv[2])
         SOURCE_LEARNSETS_JSON = None
-    elif len(sys.argv) in (2, 3):
+    elif len(sys.argv) in (2, 3, 4):
         SOURCE_DIR = pathlib.Path(sys.argv[1])
-        if len(sys.argv) == 3:
+        if len(sys.argv) >= 3:
             SOURCE_LEARNSETS_JSON = pathlib.Path(sys.argv[2])
         else:
             SOURCE_LEARNSETS_JSON = pathlib.Path("./src/data/pokemon/all_learnables.json")
@@ -246,7 +248,11 @@ def main():
         repo_teaching_types = json.load(source_fp)
 
     overrides = load_overrides(pathlib.Path("src/data/pokemon/learnset_overrides.json"))
-    content = prepare_output(all_learnables, repo_tms, repo_tutors, special_movesets, repo_teaching_types, header, overrides)
+    level_up_tms = {}
+    if len(sys.argv) == 4:
+        with open(sys.argv[3], encoding="utf-8") as file:
+            level_up_tms = json.load(file)
+    content = prepare_output(all_learnables, repo_tms, repo_tutors, special_movesets, repo_teaching_types, header, overrides, level_up_tms)
     with open("./src/data/pokemon/teachable_learnsets.h", "w") as teachables_fp:
         teachables_fp.write(content)
 

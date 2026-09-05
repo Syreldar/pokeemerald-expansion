@@ -247,6 +247,7 @@ PROPOSED_LEARNSET_OVERRIDES_JSON := $(LEARNSET_HELPERS_BUILD_DIR)/proposed_learn
 ALL_TUTORS_JSON := $(LEARNSET_HELPERS_BUILD_DIR)/all_tutors.json
 ALL_TEACHING_TYPES_JSON := $(LEARNSET_HELPERS_BUILD_DIR)/all_teaching_types.json
 LEVEL_UP_LEARNSETS := $(DATA_SRC_SUBDIR)/pokemon/level_up_learnsets.h
+LEVEL_UP_TMS_JSON := $(LEARNSET_HELPERS_BUILD_DIR)/level_up_tms.json
 # Use the same C preprocessor and config headers as the build when resolving
 # P_LVL_UP_LEARNSETS, without requiring generated headers from global.h.
 LEVEL_UP_LEARNSETS_CPP_ARGS := $(CPP) $(INCLUDE_CPP_ARGS) -imacros $(INCLUDE_DIRS)/constants/global.h
@@ -279,6 +280,10 @@ MAKEFLAGS += --no-print-directory
 RULES_NO_SCAN += libagbsyscall clean clean-assets tidy tidymodern tidycheck tidyrelease generated clean-generated clean-teachables clean-teachables_intermediates clean-level-up-learnsets migrate-level-up-learnsets regenerate-level-up-learnsets propose-learnset-overrides refresh-all-learnables
 .PHONY: all rom agbcc modern compare check debug release
 .PHONY: $(RULES_NO_SCAN)
+
+# This standalone data target needs neither compiled tools nor asset setup.
+# Add it after .PHONY so its normal timestamp dependencies remain effective.
+RULES_NO_SCAN += $(LEVEL_UP_TMS_JSON)
 
 infoshell = $(foreach line, $(shell $1 | sed "s/ /__SPACE__/g"), $(info $(subst __SPACE__, ,$(line))))
 
@@ -597,8 +602,13 @@ $(LEVEL_UP_LEARNSETS):
 regenerate-level-up-learnsets:
 	python3 $(LEARNSET_HELPERS_DIR)/make_level_up_learnsets.py $(LEVEL_UP_LEARNSETS_CPP_ARGS) -- $(LEARNSET_HELPERS_DATA_DIR) $(DATA_SRC_SUBDIR)/pokemon $(LEVEL_UP_LEARNSETS)
 
-$(DATA_SRC_SUBDIR)/pokemon/teachable_learnsets.h: $(TEACHABLE_DEPS) | $(ALL_TUTORS_JSON) $(ALL_TEACHING_TYPES_JSON)
-	python3 $(LEARNSET_HELPERS_DIR)/make_teachables.py $(LEARNSET_HELPERS_BUILD_DIR) $(EFFECTIVE_LEARNABLES_JSON)
+# Recompute derived compatibility after project learnsets or config changes.
+# The level-up header itself remains a create-once, project-owned input.
+$(LEVEL_UP_TMS_JSON): $(LEVEL_UP_LEARNSETS) $(wildcard $(INCLUDE_DIRS)/config/*.h) $(wildcard $(INCLUDE_DIRS)/constants/*.h) $(wildcard $(DATA_SRC_SUBDIR)/pokemon/species_info/*.h) $(DATA_SRC_SUBDIR)/pokemon/species_info.h $(LEARNSET_HELPERS_DIR)/make_level_up_tms.py $(LEARNSET_HELPERS_DIR)/make_level_up_learnsets.py Makefile | $(LEARNSET_HELPERS_BUILD_DIR)
+	python3 $(LEARNSET_HELPERS_DIR)/make_level_up_tms.py $(LEVEL_UP_LEARNSETS_CPP_ARGS) -iquote . -- $@
+
+$(DATA_SRC_SUBDIR)/pokemon/teachable_learnsets.h: $(TEACHABLE_DEPS) $(LEVEL_UP_TMS_JSON) | $(ALL_TUTORS_JSON) $(ALL_TEACHING_TYPES_JSON)
+	python3 $(LEARNSET_HELPERS_DIR)/make_teachables.py $(LEARNSET_HELPERS_BUILD_DIR) $(EFFECTIVE_LEARNABLES_JSON) $(LEVEL_UP_TMS_JSON)
 
 $(DATA_SRC_SUBDIR)/tutor_moves.h: $(DATA_SRC_SUBDIR)/pokemon/special_movesets.json | $(ALL_TUTORS_JSON)
 	python3 $(LEARNSET_HELPERS_DIR)/make_teachables.py  --tutors $(LEARNSET_HELPERS_BUILD_DIR)

@@ -81,6 +81,16 @@ So, for example, if you a remove a TM from your game, the move associated with t
 
 ## Available Moves
 
+### Optional compatibility from level-up moves
+
+Set `P_LEVEL_UP_TM_COMPATIBILITY` to `TRUE` in `include/config/pokemon.h` to grant compatibility when a move in the project's current `level_up_learnsets.h` is also an available TM or HM. The option defaults to `FALSE`. Ordinary builds refresh the derived compatibility after changes to level-up learnsets, species data, configuration, or the TM/HM list. They do not regenerate the editable level-up header.
+
+The helper preprocesses the current species and learnset headers, including aliases and conditional forms. It uses each active species' `.levelUpLearnset` reference, without inheriting pre-evolution moves. Forms that share a `.teachableLearnset` array share the union of their active level-up TM/HM matches. Give forms separate teachable arrays if their compatibility must differ.
+
+Tutor availability alone never grants compatibility under this option. However, the game uses the same teachable array for TMs and tutors: once compatibility is granted for a TM/HM move, a tutor offering that same move can also teach it. Explicit project removals take precedence over derived compatibility.
+
+The derived data lives in `tools/learnset_helpers/build/level_up_tms.json`. Neither this policy nor editing TMs modifies `level_up_learnsets.h`, `all_learnables.json`, `learnset_overrides.json`, or official porymoves data. When the teachable helper is disabled, the policy has no effect.
+
 The teachable learnset is based on the potential moveset and the universal moves as described in the sections above but it will only be conposed of moves that are available in your game. Let's see how the code detects the moves that are available.
 
 ### TMs/Hms

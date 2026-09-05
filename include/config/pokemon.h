@@ -11,6 +11,7 @@
 #define P_UPDATED_EXP_YIELDS        GEN_LATEST  // Since Gen 5, some Pokémon have received base Experience changes.
 
 // Learnsets
+#define P_LEVEL_UP_TM_COMPATIBILITY FALSE // Grant TM/HM compatibility from current level-up learnsets. No pre-evolution inheritance.
 #define LEVEL_UP_LEARNSETS_GAME_DEFAULT  0
 #define LEVEL_UP_LEARNSETS_GAME_RB       1
 #define LEVEL_UP_LEARNSETS_GAME_YELLOW   2
