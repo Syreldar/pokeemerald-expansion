@@ -28,6 +28,26 @@ The initialization uses the fallback rules described beside the config: species 
 
 Every `LevelMoves` entry is retained, including a move learned at more than one level, and entries are sorted numerically by level.
 
+### Selecting a specific game
+
+The generation defaults are recommended for most projects. To use one game's learnsets instead, set `P_LVL_UP_LEARNSETS_GAME` to one of the following values before initialization or explicit regeneration:
+
+| Generation | Supported sources |
+| --- | --- |
+| 1 | `LEVEL_UP_LEARNSETS_GAME_RB`, `LEVEL_UP_LEARNSETS_GAME_YELLOW` |
+| 2 | `LEVEL_UP_LEARNSETS_GAME_GS`, `LEVEL_UP_LEARNSETS_GAME_CRYSTAL` |
+| 3 | `LEVEL_UP_LEARNSETS_GAME_RSE`, `LEVEL_UP_LEARNSETS_GAME_FRLG` |
+| 4 | `LEVEL_UP_LEARNSETS_GAME_DP`, `LEVEL_UP_LEARNSETS_GAME_PLATINUM`, `LEVEL_UP_LEARNSETS_GAME_HGSS` |
+| 5 | `LEVEL_UP_LEARNSETS_GAME_BW`, `LEVEL_UP_LEARNSETS_GAME_B2W2` |
+| 6 | `LEVEL_UP_LEARNSETS_GAME_XY`, `LEVEL_UP_LEARNSETS_GAME_ORAS` |
+| 7 | `LEVEL_UP_LEARNSETS_GAME_SM`, `LEVEL_UP_LEARNSETS_GAME_USUM`, `LEVEL_UP_LEARNSETS_GAME_LGPE` |
+| 8 | `LEVEL_UP_LEARNSETS_GAME_SWSH`, `LEVEL_UP_LEARNSETS_GAME_BDSP`, `LEVEL_UP_LEARNSETS_GAME_LA` |
+| 9 | `LEVEL_UP_LEARNSETS_GAME_SV`, `LEVEL_UP_LEARNSETS_GAME_ZA` |
+
+For a species present in the selected game, the generator uses that game's data. If the species is absent, it uses the most recent earlier supported game containing that species. If no earlier game contains it because the species had not been introduced yet, it uses the species' first later appearance. This chronological fallback also supplies species outside the limited rosters of LGPE, Sword and Shield, BDSP, Legends: Arceus, Scarlet and Violet, and Legends: Z-A.
+
+`LEVEL_UP_LEARNSETS_GAME_DEFAULT` disables the game override and restores the composite data selected by `P_LVL_UP_LEARNSETS`. Changing either setting never alters an existing project-owned header during a normal build.
+
 ## Editing and regenerating
 
 Edit `src/data/pokemon/level_up_learnsets.h` directly to customize a species' moves or to add a learnset for a custom species. The [new Pokémon tutorial](how_to_new_pokemon.md) shows the required C array and species-data reference.

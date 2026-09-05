@@ -39,6 +39,70 @@ class ConditionalBlock:
     current: str
 
 
+@dataclass(frozen=True)
+class GameSource:
+    file_name: str
+    config_name: str
+    display_name: str
+
+
+GAME_SOURCES = (
+    GameSource("rgb", "LEVEL_UP_LEARNSETS_GAME_RB", "Red and Blue"),
+    GameSource("y", "LEVEL_UP_LEARNSETS_GAME_YELLOW", "Yellow"),
+    GameSource("gs", "LEVEL_UP_LEARNSETS_GAME_GS", "Gold and Silver"),
+    GameSource("c", "LEVEL_UP_LEARNSETS_GAME_CRYSTAL", "Crystal"),
+    GameSource(
+        "rse",
+        "LEVEL_UP_LEARNSETS_GAME_RSE",
+        "Ruby, Sapphire, and Emerald",
+    ),
+    GameSource(
+        "frlg",
+        "LEVEL_UP_LEARNSETS_GAME_FRLG",
+        "FireRed and LeafGreen",
+    ),
+    GameSource("dp", "LEVEL_UP_LEARNSETS_GAME_DP", "Diamond and Pearl"),
+    GameSource("pt", "LEVEL_UP_LEARNSETS_GAME_PLATINUM", "Platinum"),
+    GameSource(
+        "hgss",
+        "LEVEL_UP_LEARNSETS_GAME_HGSS",
+        "HeartGold and SoulSilver",
+    ),
+    GameSource("bw", "LEVEL_UP_LEARNSETS_GAME_BW", "Black and White"),
+    GameSource(
+        "b2w2",
+        "LEVEL_UP_LEARNSETS_GAME_B2W2",
+        "Black 2 and White 2",
+    ),
+    GameSource("xy", "LEVEL_UP_LEARNSETS_GAME_XY", "X and Y"),
+    GameSource(
+        "oras",
+        "LEVEL_UP_LEARNSETS_GAME_ORAS",
+        "Omega Ruby and Alpha Sapphire",
+    ),
+    GameSource("sm", "LEVEL_UP_LEARNSETS_GAME_SM", "Sun and Moon"),
+    GameSource(
+        "usum",
+        "LEVEL_UP_LEARNSETS_GAME_USUM",
+        "Ultra Sun and Ultra Moon",
+    ),
+    GameSource(
+        "lgpe",
+        "LEVEL_UP_LEARNSETS_GAME_LGPE",
+        "Let's Go, Pikachu! and Let's Go, Eevee!",
+    ),
+    GameSource("swsh", "LEVEL_UP_LEARNSETS_GAME_SWSH", "Sword and Shield"),
+    GameSource(
+        "bdsp",
+        "LEVEL_UP_LEARNSETS_GAME_BDSP",
+        "Brilliant Diamond and Shining Pearl",
+    ),
+    GameSource("la", "LEVEL_UP_LEARNSETS_GAME_LA", "Legends: Arceus"),
+    GameSource("sv", "LEVEL_UP_LEARNSETS_GAME_SV", "Scarlet and Violet"),
+    GameSource("za", "LEVEL_UP_LEARNSETS_GAME_ZA", "Legends: Z-A"),
+)
+
+
 def make_symbol(species: str) -> str:
     parts = re.findall(r"[A-Za-z0-9]+", species)
     name = "".join(part[:1].upper() + part[1:].lower() for part in parts)
@@ -74,15 +138,22 @@ def load_game(path: Path) -> Learnsets:
     return result
 
 
-def load_generations(inputs_dir: Path) -> list[Learnsets]:
+def load_game_sources(inputs_dir: Path) -> dict[str, Learnsets]:
+    return {
+        source.file_name: load_game(inputs_dir / f"{source.file_name}.json")
+        for source in GAME_SOURCES
+    }
+
+
+def load_generations(games: dict[str, Learnsets]) -> list[Learnsets]:
     generations = [
-        load_game(inputs_dir / f"{game}.json")
+        games[game]
         for game in PRE_GENERATION_EIGHT_GAMES
     ]
 
-    sword_and_shield = load_game(inputs_dir / "swsh.json")
-    brilliant_diamond_and_shining_pearl = load_game(inputs_dir / "bdsp.json")
-    legends_arceus = load_game(inputs_dir / "la.json")
+    sword_and_shield = games["swsh"]
+    brilliant_diamond_and_shining_pearl = games["bdsp"]
+    legends_arceus = games["la"]
 
     species_known_before_legends_arceus = set().union(
         *(generation.keys() for generation in generations),
@@ -107,9 +178,9 @@ def load_generations(inputs_dir: Path) -> list[Learnsets]:
     # Scarlet and Violet override Generation 8. Legends: Z-A only supplies
     # species which still have no learnset at that point.
     generation_nine = generation_eight.copy()
-    generation_nine.update(load_game(inputs_dir / "sv.json"))
+    generation_nine.update(games["sv"])
 
-    legends_za = load_game(inputs_dir / "za.json")
+    legends_za = games["za"]
     generation_nine.update(
         {
             symbol: moves
@@ -148,6 +219,39 @@ def select_learnsets(
             )
 
         selected[symbol] = generations[selected_generation][symbol]
+
+    return selected
+
+
+def select_game_learnsets(
+    games: dict[str, Learnsets],
+    selected_game: str,
+) -> Learnsets:
+    ordered_games = [games[source.file_name] for source in GAME_SOURCES]
+    selected_index = next(
+        index
+        for index, source in enumerate(GAME_SOURCES)
+        if source.file_name == selected_game
+    )
+    all_symbols = set().union(*(game.keys() for game in ordered_games))
+    selected = {}
+
+    for symbol in all_symbols:
+        available_indices = [
+            index
+            for index, game in enumerate(ordered_games)
+            if symbol in game
+        ]
+        earlier_indices = [
+            index for index in available_indices if index <= selected_index
+        ]
+
+        if earlier_indices:
+            source_index = max(earlier_indices)
+        else:
+            source_index = min(available_indices)
+
+        selected[symbol] = ordered_games[source_index][symbol]
 
     return selected
 
@@ -335,6 +439,43 @@ def configured_generation(
     return int(output)
 
 
+def configured_game(cpp: str, cpp_args: list[str]) -> str | None:
+    supported_names = ", ".join(
+        source.config_name for source in GAME_SOURCES
+    )
+    error_message = (
+        "Unsupported P_LVL_UP_LEARNSETS_GAME value. Use "
+        "LEVEL_UP_LEARNSETS_GAME_DEFAULT or one of: "
+        f"{supported_names}"
+    )
+    source = "\n".join(
+        (
+            "#define STRINGIFY_INNER(value) #value",
+            "#define STRINGIFY(value) STRINGIFY_INNER(value)",
+            "#ifndef P_LVL_UP_LEARNSETS_GAME",
+            '#error "P_LVL_UP_LEARNSETS_GAME is not defined"',
+            "#endif",
+            "STRINGIFY(P_LVL_UP_LEARNSETS_GAME)",
+            "",
+        )
+    )
+    output = run_cpp(cpp, cpp_args, source).strip()
+
+    match = re.fullmatch(r'"(\d+)"', output)
+    if match is None:
+        raise ValueError(error_message)
+
+    configured_value = int(match.group(1))
+    if configured_value == 0:
+        return None
+
+    source_index = configured_value - 1
+    if not 0 <= source_index < len(GAME_SOURCES):
+        raise ValueError(error_message)
+
+    return GAME_SOURCES[source_index].file_name
+
+
 def render_array(symbol: str, moves: Learnset) -> list[str]:
     lines = [f"static const struct LevelUpMove {symbol}[] = {{"]
     lines.extend(
@@ -348,6 +489,7 @@ def render_array(symbol: str, moves: Learnset) -> list[str]:
 def render(
     learnsets: Learnsets,
     symbols: list[ConditionalSymbol],
+    source_name: str,
 ) -> str:
     missing = [symbol for symbol, _ in symbols if symbol not in learnsets]
     if missing:
@@ -355,6 +497,7 @@ def render(
 
     lines = [
         "// This file is initialized from official porymoves data.",
+        f"// Source: {source_name}.",
         "// Make does not overwrite it after creation; "
         "edit it for project-specific learnsets.",
         "// Run `make regenerate-level-up-learnsets` to replace it "
@@ -408,16 +551,28 @@ def main() -> None:
     cpp, *cpp_args = cpp_command
     inputs_dir, data_dir, output_file = map(Path, input_arguments)
 
-    generations = load_generations(inputs_dir)
-    generation_index = configured_generation(
-        cpp,
-        cpp_args,
-        len(generations),
-    )
+    games = load_game_sources(inputs_dir)
+    selected_game = configured_game(cpp, cpp_args)
 
-    learnsets = select_learnsets(generations, generation_index)
+    if selected_game is None:
+        generations = load_generations(games)
+        generation_index = configured_generation(
+            cpp,
+            cpp_args,
+            len(generations),
+        )
+        learnsets = select_learnsets(generations, generation_index)
+        source_name = f"Generation {generation_index + 1} default"
+    else:
+        learnsets = select_game_learnsets(games, selected_game)
+        source_name = next(
+            source.display_name
+            for source in GAME_SOURCES
+            if source.file_name == selected_game
+        )
+
     symbols = collect_symbols(data_dir)
-    contents = render(learnsets, symbols)
+    contents = render(learnsets, symbols, source_name)
 
     output_file.write_text(contents, encoding="utf-8", newline="\n")
 
