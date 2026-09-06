@@ -100,6 +100,43 @@ SINGLE_BATTLE_TEST("Rock Head does not prevent crash damage")
     }
 }
 
+SINGLE_BATTLE_TEST("Rock Head does not prevent Steel Beam or Mind Blown's HP cost")
+{
+    enum Move move;
+    PARAMETRIZE { move = MOVE_STEEL_BEAM; }
+    PARAMETRIZE { move = MOVE_MIND_BLOWN; }
+    GIVEN {
+        ASSUME(GetMoveEffect(move) == EFFECT_MAX_HP_50_RECOIL);
+        PLAYER(SPECIES_CUBONE) { Ability(ABILITY_ROCK_HEAD); MaxHP(600); HP(600); }
+        OPPONENT(SPECIES_WOBBUFFET) { HP(1000); }
+    } WHEN {
+        TURN { MOVE(player, move); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, move, player);
+        HP_BAR(opponent);
+        HP_BAR(player, damage: 300);
+    } THEN {
+        EXPECT_EQ(player->hp, 300);
+    }
+}
+
+SINGLE_BATTLE_TEST("Rock Head prevents move recoil but not Life Orb damage on the same attack")
+{
+    GIVEN {
+        ASSUME(GetMoveRecoil(MOVE_DOUBLE_EDGE) > 0);
+        PLAYER(SPECIES_CUBONE) { Ability(ABILITY_ROCK_HEAD); MaxHP(600); HP(600); Item(ITEM_LIFE_ORB); }
+        OPPONENT(SPECIES_WOBBUFFET) { HP(1000); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_DOUBLE_EDGE); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_DOUBLE_EDGE, player);
+        HP_BAR(opponent);
+        HP_BAR(player, damage: 60);
+    } THEN {
+        EXPECT_EQ(player->hp, 540);
+    }
+}
+
 SINGLE_BATTLE_TEST("Suppressing Rock Head restores recoil")
 {
     bool32 suppress;
