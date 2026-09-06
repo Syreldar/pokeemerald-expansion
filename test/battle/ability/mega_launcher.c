@@ -1,6 +1,36 @@
 #include "global.h"
 #include "test/battle.h"
 
+DOUBLE_BATTLE_TEST("Mega Launcher boosts Origin Pulse damage against both opponents", s16 leftDamage, s16 rightDamage)
+{
+    bool32 suppress;
+    PARAMETRIZE { suppress = TRUE; }
+    PARAMETRIZE { suppress = FALSE; }
+    GIVEN {
+        ASSUME(IsPulseMove(MOVE_ORIGIN_PULSE));
+        PLAYER(SPECIES_CLAUNCHER) { Ability(ABILITY_MEGA_LAUNCHER); SpAttack(200); Speed(100); }
+        PLAYER(SPECIES_WOBBUFFET) { Speed(75); }
+        OPPONENT(SPECIES_WOBBUFFET) { HP(1000); SpDefense(100); Speed(50); }
+        OPPONENT(SPECIES_WYNAUT) { HP(1000); SpDefense(100); Speed(25); }
+    } WHEN {
+        TURN {
+            if (suppress)
+                MOVE(opponentLeft, MOVE_GASTRO_ACID, target: playerLeft);
+            else
+                MOVE(opponentLeft, MOVE_CELEBRATE);
+        }
+        TURN { MOVE(playerLeft, MOVE_ORIGIN_PULSE); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_ORIGIN_PULSE, playerLeft);
+        HP_BAR(opponentLeft, captureDamage: &results[i].leftDamage);
+        HP_BAR(opponentRight, captureDamage: &results[i].rightDamage);
+    } FINALLY {
+        EXPECT_MUL_EQ(results[0].leftDamage, UQ_4_12(1.5), results[1].leftDamage);
+        EXPECT_MUL_EQ(results[0].rightDamage, UQ_4_12(1.5), results[1].rightDamage);
+    }
+}
+
+
 SINGLE_BATTLE_TEST("Mega Launcher boosts pulse moves by 50%", s16 damage)
 {
     bool32 suppress;
