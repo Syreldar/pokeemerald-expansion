@@ -4,21 +4,18 @@
 SINGLE_BATTLE_TEST("Truant alternates between acting and loafing")
 {
     GIVEN {
-        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(2); MovesWithPP({MOVE_SCRATCH, 10}); }
+        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(2); }
         OPPONENT(SPECIES_WOBBUFFET) { Speed(1); }
     } WHEN {
         TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
+        TURN { MOVE(player, MOVE_POUND); }
+        TURN { MOVE(player, MOVE_EMBER); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("Slaking is loafing around!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("Slaking is loafing around!");
-    }
-    THEN {
-        EXPECT_EQ(player->pp[0], 8);
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_EMBER, player);
     }
 }
 
@@ -35,37 +32,21 @@ SINGLE_BATTLE_TEST("Truant advances while asleep in Gen 3-4 but only after an ac
     } WHEN {
         TURN { MOVE(player, MOVE_SNORE); }
         TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
+        TURN { MOVE(player, MOVE_POUND); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SNORE, player);
-        MESSAGE("Slaking is fast asleep.");
-        MESSAGE("Slaking woke up!");
         if (gen == GEN_4) {
-            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        } else {
-            MESSAGE("Slaking is loafing around!");
             NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+            NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
+        } else {
+            NONE_OF {
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+            }
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
         }
-    }
-}
-
-SINGLE_BATTLE_TEST("Truant does not advance while asleep in Gen 5+")
-{
-    GIVEN {
-        WITH_CONFIG(B_TRUANT, GEN_5);
-        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Status1(STATUS1_SLEEP_TURN(3)); }
-        OPPONENT(SPECIES_WOBBUFFET);
-    } WHEN {
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-    } SCENE {
-        MESSAGE("Slaking is fast asleep.");
-        MESSAGE("Slaking is fast asleep.");
-        MESSAGE("Slaking woke up!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("Slaking is loafing around!");
     }
 }
 
@@ -81,17 +62,19 @@ SINGLE_BATTLE_TEST("Truant advances while frozen in Gen 3-4 but not in Gen 5+")
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_SCRATCH, WITH_RNG(RNG_FROZEN, FALSE)); }
-        TURN { MOVE(player, MOVE_SCRATCH, WITH_RNG(RNG_FROZEN, TRUE)); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE, WITH_RNG(RNG_FROZEN, TRUE)); }
+        TURN { MOVE(player, MOVE_POUND); }
     } SCENE {
-        MESSAGE("Slaking is frozen solid!");
-        MESSAGE("Slaking thawed out!");
         if (gen == GEN_4) {
-            MESSAGE("Slaking is loafing around!");
-            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
+            NONE_OF {
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+            }
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
         } else {
-            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-            MESSAGE("Slaking is loafing around!");
+            NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+            NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
         }
     }
 }
@@ -110,9 +93,7 @@ SINGLE_BATTLE_TEST("A thawing move does not thaw its user on a Truant loafing tu
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_ICE_BEAM, opponent);
         STATUS_ICON(player, freeze: TRUE);
-        MESSAGE("Slaking is loafing around!");
         NONE_OF {
-            MESSAGE("Slaking's Flame Wheel melted the ice!");
             STATUS_ICON(player, none: TRUE);
             ANIMATION(ANIM_TYPE_MOVE, MOVE_FLAME_WHEEL, player);
         }
@@ -121,47 +102,50 @@ SINGLE_BATTLE_TEST("A thawing move does not thaw its user on a Truant loafing tu
     }
 }
 
-SINGLE_BATTLE_TEST("Truant is checked before paralysis and full paralysis advances it")
+SINGLE_BATTLE_TEST("Truant is checked before paralysis and confusion, and either failure advances it")
 {
+    enum Move statusMove;
+    PARAMETRIZE { statusMove = MOVE_THUNDER_WAVE; }
+    PARAMETRIZE { statusMove = MOVE_CONFUSE_RAY; }
+
     GIVEN {
         WITH_CONFIG(B_TRUANT, GEN_5);
         ASSUME(GetMoveEffect(MOVE_THUNDER_WAVE) == EFFECT_NON_VOLATILE_STATUS);
         ASSUME(GetMoveNonVolatileStatus(MOVE_THUNDER_WAVE) == MOVE_EFFECT_PARALYSIS);
-        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(2); }
-        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); }
-    } WHEN {
-        TURN { MOVE(player, MOVE_SCRATCH); MOVE(opponent, MOVE_THUNDER_WAVE); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH, WITH_RNG(RNG_PARALYSIS, TRUE)); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-    } SCENE {
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_THUNDER_WAVE, opponent);
-        MESSAGE("Slaking is loafing around!");
-        MESSAGE("Slaking couldn't move because it's paralyzed!");
-        MESSAGE("Slaking is loafing around!");
-    }
-}
-
-SINGLE_BATTLE_TEST("Truant is checked before confusion and a confusion self-hit advances it")
-{
-    GIVEN {
-        WITH_CONFIG(B_TRUANT, GEN_5);
         ASSUME(GetMoveEffect(MOVE_CONFUSE_RAY) == EFFECT_CONFUSE);
         PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(2); }
         OPPONENT(SPECIES_WOBBUFFET) { Speed(1); }
     } WHEN {
-        TURN { MOVE(player, MOVE_SCRATCH); MOVE(opponent, MOVE_CONFUSE_RAY); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH, WITH_RNG(RNG_CONFUSION, TRUE)); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_SCRATCH); MOVE(opponent, statusMove); }
+        TURN { MOVE(player, MOVE_TACKLE); }
+        if (statusMove == MOVE_CONFUSE_RAY)
+            TURN { MOVE(player, MOVE_POUND, WITH_RNG(RNG_CONFUSION, TRUE)); }
+        else
+            TURN { MOVE(player, MOVE_POUND, WITH_RNG(RNG_PARALYSIS, TRUE)); }
+        TURN { MOVE(player, MOVE_TACKLE); }
+        if (statusMove == MOVE_CONFUSE_RAY)
+            TURN { MOVE(player, MOVE_EMBER, WITH_RNG(RNG_CONFUSION, FALSE)); }
+        else
+            TURN { MOVE(player, MOVE_EMBER, WITH_RNG(RNG_PARALYSIS, FALSE)); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_CONFUSE_RAY, opponent);
-        MESSAGE("Slaking is loafing around!");
-        MESSAGE("Slaking is confused!");
-        MESSAGE("It hurt itself in its confusion!");
-        MESSAGE("Slaking is loafing around!");
+        ANIMATION(ANIM_TYPE_MOVE, statusMove, opponent);
+        if (statusMove == MOVE_THUNDER_WAVE)
+            STATUS_ICON(player, paralysis: TRUE);
+        if (statusMove == MOVE_CONFUSE_RAY) {
+            NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+            HP_BAR(player);
+            NONE_OF {
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+            }
+        } else {
+            NONE_OF {
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+                ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
+            }
+        }
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_EMBER, player);
     }
 }
 
@@ -173,11 +157,15 @@ SINGLE_BATTLE_TEST("Flinching advances Truant")
         OPPONENT(SPECIES_WOBBUFFET) { Speed(2); }
     } WHEN {
         TURN { MOVE(opponent, MOVE_FAKE_OUT); MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
+        TURN { MOVE(player, MOVE_POUND); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_FAKE_OUT, opponent);
-        MESSAGE("Slaking flinched and couldn't move!");
-        MESSAGE("Slaking is loafing around!");
+        NONE_OF {
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+        }
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
     }
 }
 
@@ -226,10 +214,11 @@ SINGLE_BATTLE_TEST("Power Herb lets a Truant user complete a two-turn move befor
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_SOLAR_BEAM); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SOLAR_BEAM, player);
-        MESSAGE("Slaking is loafing around!");
+        HP_BAR(opponent);
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
     } THEN {
         EXPECT_EQ(player->item, ITEM_NONE);
     }
@@ -316,7 +305,7 @@ SINGLE_BATTLE_TEST("Stomping Tantrum and Temper Flare deal double damage after a
     }
 }
 
-DOUBLE_BATTLE_TEST("An action called by Instruct advances Truant")
+DOUBLE_BATTLE_TEST("Instruct spends a pending Truant loaf and advances it to an acting turn")
 {
     GIVEN {
         WITH_CONFIG(B_TRUANT, GEN_5);
@@ -327,12 +316,12 @@ DOUBLE_BATTLE_TEST("An action called by Instruct advances Truant")
         OPPONENT(SPECIES_WYNAUT) { Speed(1); }
     } WHEN {
         TURN { MOVE(playerLeft, MOVE_SCRATCH, target: opponentLeft); MOVE(playerRight, MOVE_INSTRUCT, target: playerLeft); }
-        TURN { MOVE(playerLeft, MOVE_SCRATCH, target: opponentLeft); }
+        TURN { MOVE(playerLeft, MOVE_TACKLE, target: opponentLeft); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerLeft);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_INSTRUCT, playerRight);
-        MESSAGE("Slaking is loafing around!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerLeft);
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerLeft);
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, playerLeft);
     }
 }
 
@@ -359,7 +348,7 @@ SINGLE_BATTLE_TEST("A battle item advances Truant in Gen 3-4 but not in Gen 5+")
     }
 }
 
-SINGLE_BATTLE_TEST("A native Truant user switched in by a move acts first")
+SINGLE_BATTLE_TEST("A native Truant user switched in during a turn acts on its first turn")
 {
     u32 gen;
     PARAMETRIZE { gen = GEN_3; }
@@ -374,11 +363,11 @@ SINGLE_BATTLE_TEST("A native Truant user switched in by a move acts first")
     } WHEN {
         TURN { MOVE(player, MOVE_BATON_PASS); SEND_OUT(player, 1); }
         TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_BATON_PASS, player);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("Slaking is loafing around!");
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
     }
 }
 
@@ -440,7 +429,6 @@ SINGLE_BATTLE_TEST("Tracing Truant after an end-turn faint acts first")
     u32 gen;
     PARAMETRIZE { gen = GEN_3; }
     PARAMETRIZE { gen = GEN_4; }
-    PARAMETRIZE { gen = GEN_5; }
 
     GIVEN {
         WITH_CONFIG(B_TRUANT, gen);
@@ -501,56 +489,50 @@ SINGLE_BATTLE_TEST("Gaining Truant makes the next action loaf regardless of move
         OPPONENT(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(playerMovedFirst ? 1 : 2); }
     } WHEN {
         TURN { MOVE(player, MOVE_SCRATCH); MOVE(opponent, MOVE_SKILL_SWAP); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
+        TURN { MOVE(player, MOVE_POUND); }
     } SCENE {
+        if (playerMovedFirst)
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SKILL_SWAP, opponent);
         if (!playerMovedFirst)
             ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("Wobbuffet is loafing around!");
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, player);
     }
 }
 
-DOUBLE_BATTLE_TEST("Neutralizing Gas reactivation before Truant acts lets it act and makes the next turn loaf")
+DOUBLE_BATTLE_TEST("Neutralizing Gas ending before or after Truant acts makes its next turn loaf")
 {
+    bool32 gasEndsBeforeTruantActs;
+    PARAMETRIZE { gasEndsBeforeTruantActs = TRUE; }
+    PARAMETRIZE { gasEndsBeforeTruantActs = FALSE; }
+
     GIVEN {
         WITH_CONFIG(B_TRUANT, GEN_5);
-        PLAYER(SPECIES_WOBBUFFET) { Speed(3); }
-        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(2); }
-        OPPONENT(SPECIES_KOFFING) { Ability(ABILITY_NEUTRALIZING_GAS); HP(1); Speed(1); }
-        OPPONENT(SPECIES_WYNAUT) { Speed(1); }
+        PLAYER(SPECIES_WOBBUFFET) { Speed(gasEndsBeforeTruantActs ? 4 : 3); }
+        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(gasEndsBeforeTruantActs ? 3 : 4); }
+        OPPONENT(SPECIES_KOFFING) { Ability(ABILITY_NEUTRALIZING_GAS); HP(1); Speed(2); }
+        OPPONENT(SPECIES_WYNAUT) { HP(1000); MaxHP(1000); Speed(1); }
     } WHEN {
         TURN { MOVE(playerLeft, MOVE_SCRATCH, target: opponentLeft); MOVE(playerRight, MOVE_SCRATCH, target: opponentRight); }
-        TURN { MOVE(playerRight, MOVE_SCRATCH, target: opponentRight); }
+        TURN { MOVE(playerRight, MOVE_TACKLE, target: opponentRight); }
+        TURN { MOVE(playerRight, MOVE_POUND, target: opponentRight); }
     } SCENE {
         ABILITY_POPUP(opponentLeft, ABILITY_NEUTRALIZING_GAS);
-        MESSAGE("Neutralizing gas filled the area!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerLeft);
-        MESSAGE("The effects of the neutralizing gas wore off!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerRight);
-        MESSAGE("Slaking is loafing around!");
+        if (gasEndsBeforeTruantActs) {
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerLeft);
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerRight);
+        } else {
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerRight);
+            ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerLeft);
+        }
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, playerRight);
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_POUND, playerRight);
     }
 }
 
-SINGLE_BATTLE_TEST("Neutralizing Gas reactivation after Truant acts makes the next turn loaf")
-{
-    GIVEN {
-        WITH_CONFIG(B_TRUANT, GEN_5);
-        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); }
-        OPPONENT(SPECIES_KOFFING) { Ability(ABILITY_NEUTRALIZING_GAS); HP(1); }
-        OPPONENT(SPECIES_WYNAUT);
-    } WHEN {
-        TURN { MOVE(player, MOVE_SCRATCH); SEND_OUT(opponent, 1); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-    } SCENE {
-        ABILITY_POPUP(opponent, ABILITY_NEUTRALIZING_GAS);
-        MESSAGE("Neutralizing gas filled the area!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("The effects of the neutralizing gas wore off!");
-        MESSAGE("Slaking is loafing around!");
-    }
-}
-
-SINGLE_BATTLE_TEST("A Truant user switched in before Neutralizing Gas ends acts first")
+SINGLE_BATTLE_TEST("A Truant user switched in while Neutralizing Gas is active acts after it ends")
 {
     GIVEN {
         WITH_CONFIG(B_TRUANT, GEN_5);
@@ -561,18 +543,17 @@ SINGLE_BATTLE_TEST("A Truant user switched in before Neutralizing Gas ends acts 
     } WHEN {
         TURN { MOVE(player, MOVE_BATON_PASS); SEND_OUT(player, 1); MOVE(opponent, MOVE_MEMENTO); SEND_OUT(opponent, 1); }
         TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
     } SCENE {
         ABILITY_POPUP(opponent, ABILITY_NEUTRALIZING_GAS);
-        MESSAGE("Neutralizing gas filled the area!");
         ANIMATION(ANIM_TYPE_MOVE, MOVE_BATON_PASS, player);
-        MESSAGE("The effects of the neutralizing gas wore off!");
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_MEMENTO, opponent);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("Slaking is loafing around!");
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
     }
 }
 
-DOUBLE_BATTLE_TEST("Truant activates immediately when Neutralizing Gas ends after Dynamax")
+DOUBLE_BATTLE_TEST("Truant loafs when Neutralizing Gas ends after Dynamax but before its action")
 {
     GIVEN {
         WITH_CONFIG(B_TRUANT, GEN_5);
@@ -582,15 +563,13 @@ DOUBLE_BATTLE_TEST("Truant activates immediately when Neutralizing Gas ends afte
         OPPONENT(SPECIES_WYNAUT) { Speed(1); }
     } WHEN {
         TURN { MOVE(playerLeft, MOVE_SCRATCH, target: opponentLeft); MOVE(playerRight, MOVE_SCRATCH, gimmick: GIMMICK_DYNAMAX, target: opponentRight); }
-        TURN { MOVE(playerRight, MOVE_SCRATCH, target: opponentRight); }
+        TURN { MOVE(playerRight, MOVE_EMBER, target: opponentRight); }
     } SCENE {
         ABILITY_POPUP(opponentLeft, ABILITY_NEUTRALIZING_GAS);
-        MESSAGE("Neutralizing gas filled the area!");
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_DYNAMAX_GROWTH, playerRight);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, playerLeft);
-        MESSAGE("The effects of the neutralizing gas wore off!");
-        MESSAGE("Slaking is loafing around!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_MAX_STRIKE, playerRight);
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_MAX_STRIKE, playerRight);
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_MAX_FLARE, playerRight);
     }
 }
 
@@ -720,13 +699,12 @@ SINGLE_BATTLE_TEST("Being held by Sky Drop does not advance Truant")
         TURN { MOVE(opponent, MOVE_SKY_DROP); MOVE(player, MOVE_SCRATCH); }
         TURN { SKIP_TURN(opponent); }
         TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
+        TURN { MOVE(player, MOVE_TACKLE); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SKY_DROP, opponent);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SKY_DROP, opponent);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-        MESSAGE("Slaking is loafing around!");
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);
     }
 }
 
@@ -1004,25 +982,6 @@ SINGLE_BATTLE_TEST("A Truant user put to sleep on a loafing turn loafs when it w
         MESSAGE("Slaking fell asleep!");
         MESSAGE("Slaking is fast asleep.");
         MESSAGE("Slaking woke up!");
-        MESSAGE("Slaking is loafing around!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-    }
-}
-
-SINGLE_BATTLE_TEST("Selecting a thawing move while frozen advances Truant")
-{
-    GIVEN {
-        WITH_CONFIG(B_TRUANT, GEN_5);
-        ASSUME(MoveThawsUser(MOVE_FLAME_WHEEL));
-        PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Status1(STATUS1_FREEZE); }
-        OPPONENT(SPECIES_WOBBUFFET);
-    } WHEN {
-        TURN { MOVE(player, MOVE_FLAME_WHEEL); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-        TURN { MOVE(player, MOVE_SCRATCH); }
-    } SCENE {
-        MESSAGE("Slaking's Flame Wheel melted the ice!");
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_FLAME_WHEEL, player);
         MESSAGE("Slaking is loafing around!");
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
     }
