@@ -1,6 +1,27 @@
 #include "global.h"
 #include "test/battle.h"
 
+SINGLE_BATTLE_TEST("Long Reach prevents Mummy from replacing the user's ability")
+{
+    enum Ability ability;
+    PARAMETRIZE { ability = ABILITY_OVERGROW; }
+    PARAMETRIZE { ability = ABILITY_LONG_REACH; }
+    GIVEN {
+        ASSUME(MoveMakesContact(MOVE_PECK));
+        PLAYER(SPECIES_ROWLET) { Ability(ability); }
+        OPPONENT(SPECIES_COFAGRIGUS) { Ability(ABILITY_MUMMY); HP(1000); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_PECK); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_PECK, player);
+        HP_BAR(opponent);
+    } THEN {
+        EXPECT_EQ(player->ability, ability == ABILITY_LONG_REACH ? ABILITY_LONG_REACH : ABILITY_MUMMY);
+        EXPECT_EQ(opponent->ability, ABILITY_MUMMY);
+    }
+}
+
+
 ASSUMPTIONS
 {
     ASSUME(MoveMakesContact(MOVE_SCRATCH));
