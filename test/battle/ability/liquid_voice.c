@@ -1,6 +1,42 @@
 #include "global.h"
 #include "test/battle.h"
 
+SINGLE_BATTLE_TEST("Liquid Voice adds no power boost when converting Hyper Voice to Water", s16 damage)
+{
+    enum Move move;
+    PARAMETRIZE { move = MOVE_SURF; }
+    PARAMETRIZE { move = MOVE_HYPER_VOICE; }
+    GIVEN {
+        ASSUME(GetMovePower(MOVE_SURF) == GetMovePower(MOVE_HYPER_VOICE));
+        ASSUME(GetMoveCategory(MOVE_SURF) == GetMoveCategory(MOVE_HYPER_VOICE));
+        ASSUME(GetMoveType(MOVE_SURF) == TYPE_WATER);
+        PLAYER(SPECIES_PRIMARINA) { Ability(ABILITY_LIQUID_VOICE); SpAttack(200); }
+        OPPONENT(SPECIES_WOBBUFFET) { HP(1000); SpDefense(100); }
+    } WHEN {
+        TURN { MOVE(player, move); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, move, player);
+        HP_BAR(opponent, captureDamage: &results[i].damage);
+    } FINALLY {
+        EXPECT_EQ(results[0].damage, results[1].damage);
+    }
+}
+
+SINGLE_BATTLE_TEST("Liquid Voice does not make non-sound moves activate Water Absorb")
+{
+    GIVEN {
+        PLAYER(SPECIES_PRIMARINA) { Ability(ABILITY_LIQUID_VOICE); }
+        OPPONENT(SPECIES_VAPOREON) { Ability(ABILITY_WATER_ABSORB); MaxHP(1000); HP(500); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_SCRATCH); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
+        HP_BAR(opponent);
+    } THEN {
+        EXPECT_LT(opponent->hp, 500);
+    }
+}
+
 ASSUMPTIONS
 {
     ASSUME(GetMoveType(MOVE_HYPER_VOICE) == TYPE_NORMAL);
