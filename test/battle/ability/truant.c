@@ -693,15 +693,17 @@ SINGLE_BATTLE_TEST("Being held by Sky Drop does not advance Truant")
     GIVEN {
         WITH_CONFIG(B_TRUANT, GEN_5);
         ASSUME(GetMoveEffect(MOVE_SKY_DROP) == EFFECT_SKY_DROP);
+        ASSUME(GetMovePriority(MOVE_QUICK_ATTACK) > GetMovePriority(MOVE_SKY_DROP));
         PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); Speed(1); }
         OPPONENT(SPECIES_AERODACTYL) { Speed(2); }
     } WHEN {
         TURN { MOVE(opponent, MOVE_SKY_DROP); MOVE(player, MOVE_SCRATCH); }
-        TURN { SKIP_TURN(opponent); }
+        TURN { MOVE(player, MOVE_QUICK_ATTACK); SKIP_TURN(opponent); }
         TURN { MOVE(player, MOVE_SCRATCH); }
         TURN { MOVE(player, MOVE_TACKLE); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SKY_DROP, opponent);
+        NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_QUICK_ATTACK, player);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SKY_DROP, opponent);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
         NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_TACKLE, player);

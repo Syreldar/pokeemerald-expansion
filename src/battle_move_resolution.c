@@ -1830,18 +1830,6 @@ static bool32 CanTwoTurnMoveFireThisTurn(struct BattleCalcValues *cv, bool32 *sh
     return FALSE;
 }
 
-static void CancelPendingSkyDropTargetAction(enum BattlerId battler)
-{
-    for (u32 i = gCurrentTurnActionNumber + 1; i < gBattlersCount; i++)
-    {
-        if (gBattlerByTurnOrder[i] == battler)
-        {
-            gActionsByTurnOrder[i] = B_ACTION_FINISHED;
-            return;
-        }
-    }
-}
-
 static enum CancelerResult HandleSkyDropResult(struct BattleCalcValues *cv)
 {
     if (gBattleMons[cv->battlerAtk].volatiles.multipleTurns) // Second turn
@@ -1860,7 +1848,6 @@ static enum CancelerResult HandleSkyDropResult(struct BattleCalcValues *cv)
         }
 
         gBattleMons[cv->battlerAtk].volatiles.skyDropTarget = 0;
-        CancelPendingSkyDropTargetAction(cv->battlerDef);
         gBattleMons[cv->battlerDef].volatiles.semiInvulnerable = STATE_NONE;
         return CANCELER_RESULT_SUCCESS;
     }
