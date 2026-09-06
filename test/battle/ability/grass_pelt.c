@@ -50,7 +50,7 @@ SINGLE_BATTLE_TEST("Grass Pelt does not activate without Grassy Terrain", s16 da
     }
 }
 
-SINGLE_BATTLE_TEST("Grass Pelt does not reduce special damage", s16 damage)
+SINGLE_BATTLE_TEST("Grass Pelt does not reduce damage calculated using Special Defense", s16 damage)
 {
     enum Ability ability;
     PARAMETRIZE { ability = ABILITY_GRASS_PELT; }
