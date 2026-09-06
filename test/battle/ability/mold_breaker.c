@@ -1,6 +1,24 @@
 #include "global.h"
 #include "test/battle.h"
 
+SINGLE_BATTLE_TEST("Mold Breaker bypasses Marvel Scale", s16 damage)
+{
+    enum Ability ability;
+    PARAMETRIZE { ability = ABILITY_COMPETITIVE; }
+    PARAMETRIZE { ability = ABILITY_MARVEL_SCALE; }
+    GIVEN {
+        PLAYER(SPECIES_MILOTIC) { Ability(ability); MaxHP(1000); HP(1000); Defense(100); Speed(100); Status1(STATUS1_POISON); }
+        OPPONENT(SPECIES_PINSIR) { Ability(ABILITY_MOLD_BREAKER); Attack(200); Speed(50); }
+    } WHEN {
+        TURN { MOVE(opponent, MOVE_SCRATCH); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, opponent);
+        HP_BAR(player, captureDamage: &results[i].damage);
+    } FINALLY {
+        EXPECT_EQ(results[0].damage, results[1].damage);
+    }
+}
+
 SINGLE_BATTLE_TEST("Mold Breaker bypasses Grass Pelt", s16 damage)
 {
     enum Ability ability;
