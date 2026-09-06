@@ -104,7 +104,7 @@ static enum CancelerResult CancelerRecharge(struct BattleCalcValues *cv)
 {
     if (gBattleMons[cv->battlerAtk].volatiles.rechargeTimer > 0)
     {
-        if (GetConfig(B_TRUANT) >= GEN_5 && GetBattlerAbility(cv->battlerAtk) == ABILITY_TRUANT)
+        if (GetConfig(B_TRUANT) >= GEN_5 && cv->abilities[cv->battlerAtk] == ABILITY_TRUANT)
             gBattleMons[cv->battlerAtk].volatiles.truantToggle = 0;
         CancelMultiTurnMoves(cv->battlerAtk);
         gBattlescriptCurrInstr = BattleScript_MoveUsedMustRecharge;
