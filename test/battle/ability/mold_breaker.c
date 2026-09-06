@@ -1,6 +1,25 @@
 #include "global.h"
 #include "test/battle.h"
 
+SINGLE_BATTLE_TEST("Mold Breaker bypasses Grass Pelt", s16 damage)
+{
+    enum Ability ability;
+    PARAMETRIZE { ability = ABILITY_SAP_SIPPER; }
+    PARAMETRIZE { ability = ABILITY_GRASS_PELT; }
+    GIVEN {
+        PLAYER(SPECIES_GOGOAT) { Ability(ability); HP(1000); Defense(100); Speed(100); }
+        OPPONENT(SPECIES_PINSIR) { Ability(ABILITY_MOLD_BREAKER); Attack(200); Speed(50); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_GRASSY_TERRAIN); MOVE(opponent, MOVE_SCRATCH); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, opponent);
+        HP_BAR(player, captureDamage: &results[i].damage);
+    } FINALLY {
+        EXPECT_EQ(results[0].damage, results[1].damage);
+    }
+}
+
+
 SINGLE_BATTLE_TEST("Mold Breaker cancels damage reduction from Ice Scales", s16 damage)
 {
     enum Ability ability;

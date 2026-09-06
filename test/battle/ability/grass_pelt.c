@@ -1,6 +1,44 @@
 #include "global.h"
 #include "test/battle.h"
 
+SINGLE_BATTLE_TEST("Grass Pelt reduces Psyshock damage on Grassy Terrain", s16 damage)
+{
+    enum Ability ability;
+    PARAMETRIZE { ability = ABILITY_SAP_SIPPER; }
+    PARAMETRIZE { ability = ABILITY_GRASS_PELT; }
+    GIVEN {
+        ASSUME(GetMoveCategory(MOVE_PSYSHOCK) == DAMAGE_CATEGORY_SPECIAL);
+        PLAYER(SPECIES_GOGOAT) { Ability(ability); HP(1000); Defense(100); Speed(100); }
+        OPPONENT(SPECIES_WOBBUFFET) { SpAttack(200); Speed(50); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_GRASSY_TERRAIN); MOVE(opponent, MOVE_PSYSHOCK); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_PSYSHOCK, opponent);
+        HP_BAR(player, captureDamage: &results[i].damage);
+    } FINALLY {
+        EXPECT_MUL_EQ(results[1].damage, UQ_4_12(1.5), results[0].damage);
+    }
+}
+
+SINGLE_BATTLE_TEST("Grass Pelt boosts Defense even while the holder is airborne", s16 damage)
+{
+    enum Ability ability;
+    PARAMETRIZE { ability = ABILITY_SAP_SIPPER; }
+    PARAMETRIZE { ability = ABILITY_GRASS_PELT; }
+    GIVEN {
+        PLAYER(SPECIES_GOGOAT) { Ability(ability); Item(ITEM_AIR_BALLOON); HP(1000); Defense(100); Speed(100); }
+        OPPONENT(SPECIES_WOBBUFFET) { Attack(200); Speed(50); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_GRASSY_TERRAIN); MOVE(opponent, MOVE_SCRATCH); }
+    } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, opponent);
+        HP_BAR(player, captureDamage: &results[i].damage);
+    } FINALLY {
+        EXPECT_MUL_EQ(results[1].damage, UQ_4_12(1.5), results[0].damage);
+    }
+}
+
+
 ASSUMPTIONS
 {
     ASSUME(GetMoveCategory(MOVE_SCRATCH) == DAMAGE_CATEGORY_PHYSICAL);
