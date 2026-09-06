@@ -279,7 +279,7 @@ static enum CancelerResult CancelerPowerPoints(struct BattleCalcValues *cv)
 
 static enum CancelerResult CancelerTruant(struct BattleCalcValues *cv)
 {
-    if (GetBattlerAbility(cv->battlerAtk) != ABILITY_TRUANT)
+    if (cv->abilities[cv->battlerAtk] != ABILITY_TRUANT)
         return CANCELER_RESULT_SUCCESS;
 
     bool32 shouldLoaf = gBattleMons[cv->battlerAtk].volatiles.truantToggle;
