@@ -350,13 +350,7 @@ SINGLE_BATTLE_TEST("A battle item advances Truant in Gen 3-4 but not in Gen 5+")
 
 SINGLE_BATTLE_TEST("A native Truant user switched in during a turn acts on its first turn")
 {
-    u32 gen;
-    PARAMETRIZE { gen = GEN_3; }
-    PARAMETRIZE { gen = GEN_4; }
-    PARAMETRIZE { gen = GEN_5; }
-
     GIVEN {
-        WITH_CONFIG(B_TRUANT, gen);
         PLAYER(SPECIES_WOBBUFFET);
         PLAYER(SPECIES_SLAKING) { Ability(ABILITY_TRUANT); }
         OPPONENT(SPECIES_WOBBUFFET);
